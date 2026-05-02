@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Block admin and API from indexing
+Disallow: /admin
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+
+# Sitemap location
+Sitemap: https://aloudervoice.co.za/sitemap.xml

@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --nude: #F4F0E6;
+  --nude-dark: #EAE5D9;
+  --black: #0A0A0A;
+  --gold: #C5A059;
+}
+
+body {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  background: var(--nude);
+  color: var(--black);
+}
+
+h1, h2, h3 {
+  font-family: 'Cormorant Garamond', serif;
+}
+
+.hero-overlay {
+  background: linear-gradient(rgba(10,10,10,0.6), rgba(0,0,0,0.4));
+}
+
+.gold-line {
+  width: 60px;
+  height: 1px;
+  background: var(--gold);
+}
+
+.btn-gold {
+  background: var(--gold);
+  padding: 12px 28px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 13px;
+  color: black;
+}
+
+.btn-gold:hover {
+  background: white;
+}
