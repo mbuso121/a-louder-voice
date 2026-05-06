@@ -6,6 +6,7 @@ import { Heart, ChatCircle, ArrowRight, X } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
 import API from "../lib/api";
 import SEO from "../components/SEO";
+import SkeletonCard from "../components/SkeletonCard";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -277,7 +278,9 @@ export default function Engagement() {
         </motion.div>
 
         {loading ? (
-          <p className="text-center text-[#4A4A4A]">Loading...</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
+          </div>
         ) : posts.length === 0 ? (
           <p className="text-center text-[#4A4A4A]">No posts yet.</p>
         ) : (

@@ -1,20 +1,26 @@
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 
-import Home          from "./pages/Home";
-import Analysis      from "./pages/Analysis";
-import Engagement    from "./pages/Engagement";
-import Letters       from "./pages/Letters";
-import SMME          from "./pages/SMME";
-import About         from "./pages/About";
-import Contact       from "./pages/Contact";
-import Submit        from "./pages/Submit";
-import Admin         from "./pages/Admin";
-import Login         from "./pages/Login";
-import Register      from "./pages/Register";
+import Home           from "./pages/Home";
+import Analysis       from "./pages/Analysis";
+import Engagement     from "./pages/Engagement";
+import Letters        from "./pages/Letters";
+import SMME           from "./pages/SMME";
+import About          from "./pages/About";
+import Contact        from "./pages/Contact";
+import Submit         from "./pages/Submit";
+import Admin          from "./pages/Admin";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminCreatePost from "./pages/AdminCreatePost";
+import Login          from "./pages/Login";
+import Register       from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword  from "./pages/ResetPassword";
-import PostDetail    from "./pages/PostDetail";
+import PostDetail     from "./pages/PostDetail";
+import Profile        from "./pages/Profile";
+import Search         from "./pages/Search";
+import PrivacyPolicy  from "./pages/PrivacyPolicy";
+import NotFound       from "./pages/NotFound";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -22,10 +28,10 @@ export default function App() {
   return (
     <Routes>
       {/* AUTH */}
-      <Route path="/login"            element={<Login />} />
-      <Route path="/register"         element={<Register />} />
-      <Route path="/forgot-password"  element={<ForgotPassword />} />
-      <Route path="/reset-password/:token" element={<ResetPassword />} />
+      <Route path="/login"                   element={<Login />} />
+      <Route path="/register"                element={<Register />} />
+      <Route path="/forgot-password"         element={<ForgotPassword />} />
+      <Route path="/reset-password/:token"   element={<ResetPassword />} />
 
       {/* PUBLIC */}
       <Route path="/"           element={<MainLayout><Home /></MainLayout>} />
@@ -35,12 +41,19 @@ export default function App() {
       <Route path="/smme"       element={<MainLayout><SMME /></MainLayout>} />
       <Route path="/about"      element={<MainLayout><About /></MainLayout>} />
       <Route path="/contact"    element={<MainLayout><Contact /></MainLayout>} />
+      <Route path="/privacy"    element={<MainLayout><PrivacyPolicy /></MainLayout>} />
+      <Route path="/search"     element={<MainLayout><Search /></MainLayout>} />
       <Route path="/post/:id"   element={<MainLayout><PostDetail /></MainLayout>} />
 
       {/* PROTECTED: logged-in users */}
       <Route path="/submit" element={
         <ProtectedRoute>
           <MainLayout><Submit /></MainLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <MainLayout><Profile /></MainLayout>
         </ProtectedRoute>
       } />
 
@@ -50,6 +63,19 @@ export default function App() {
           <Admin />
         </ProtectedRoute>
       } />
+      <Route path="/admin-dashboard" element={
+        <ProtectedRoute role="admin">
+          <AdminDashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/admin-create" element={
+        <ProtectedRoute role="admin">
+          <AdminCreatePost />
+        </ProtectedRoute>
+      } />
+
+      {/* 404 */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

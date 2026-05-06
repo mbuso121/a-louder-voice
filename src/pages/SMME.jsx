@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Storefront, ArrowRight } from "@phosphor-icons/react";
 import API from "../lib/api";
 import SEO from "../components/SEO";
+import SkeletonCard from "../components/SkeletonCard";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 

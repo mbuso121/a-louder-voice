@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { ArrowLeft, Heart, ChatCircle } from "@phosphor-icons/react";
+import { ArrowLeft, Heart, ChatCircle, ShareNetwork, WhatsappLogo, TwitterLogo, Link as LinkIcon } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
 import API from "../lib/api";
 import SEO, { ArticleSchema } from "../components/SEO";
@@ -19,15 +19,26 @@ export default function PostDetail() {
   const [commentText, setCommentText] = useState("");
   const [replyText, setReplyText] = useState({});
   const [openReply, setOpenReply] = useState(null);
+  const [showShare, setShowShare] = useState(false);
+  const [related, setRelated] = useState([]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetchPost();
   }, [id]);
 
+  const fetchRelated = async (category) => {
+    try {
+      const res = await axios.get(`${API}/posts?category=${category}&limit=3`);
+      setRelated((Array.isArray(res.data) ? res.data : []).filter(p => p._id !== id).slice(0, 3));
+    } catch {}
+  };
+
   const fetchPost = async () => {
     try {
       const res = await axios.get(`${API}/posts/${id}`);
       setPost(res.data);
+      fetchRelated(res.data.category);
     } catch (err) {
       console.error(err);
     } finally {
@@ -93,6 +104,15 @@ export default function PostDetail() {
       </div>
     );
   }
+
+  const postUrl = typeof window !== "undefined" ? window.location.href : "";
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(postUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const bgColor = post.category === "smme" ? "bg-[#0A0A0A] text-[#F4F0E6]" : "bg-[#F4F0E6] text-[#0A0A0A]";
   const seoImage = post.image || undefined;
@@ -205,6 +225,30 @@ export default function PostDetail() {
               <ChatCircle size={22} />
               {post.comments?.length || 0} comments
             </span>
+            <div className="relative ml-auto">
+              <button onClick={() => setShowShare(!showShare)}
+                className="flex items-center gap-2 text-[#4A4A4A] hover:text-[#C5A059] transition text-sm">
+                <ShareNetwork size={22} /> Share
+              </button>
+              {showShare && (
+                <div className="absolute right-0 top-8 bg-white border border-[#0A0A0A]/10 shadow-sm z-10 w-48">
+                  <a href={`https://wa.me/?text=${encodeURIComponent(post.title + " " + postUrl)}`}
+                    target="_blank" rel="noreferrer"
+                    className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-[#F4F0E6] transition">
+                    <WhatsappLogo size={16} className="text-green-500" /> WhatsApp
+                  </a>
+                  <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(postUrl)}`}
+                    target="_blank" rel="noreferrer"
+                    className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-[#F4F0E6] transition">
+                    <TwitterLogo size={16} className="text-blue-400" /> Twitter / X
+                  </a>
+                  <button onClick={copyLink}
+                    className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-[#F4F0E6] transition w-full text-left">
+                    <LinkIcon size={16} /> {copied ? "Copied!" : "Copy link"}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* COMMENT INPUT */}
@@ -293,6 +337,28 @@ export default function PostDetail() {
               ))}
             </div>
           )}
+
+        {/* RELATED POSTS */}
+        {related.length > 0 && (
+          <div className="mt-16 pt-10 border-t border-[#0A0A0A]/10">
+            <h3 className="text-xs uppercase tracking-[0.2em] text-[#C5A059] mb-6">More from {post.category}</h3>
+            <div className="grid sm:grid-cols-3 gap-6">
+              {related.map(r => (
+                <div key={r._id} onClick={() => { navigate(`/post/${r._id}`); window.scrollTo(0,0); }}
+                  className="cursor-pointer group">
+                  {r.image ? (
+                    <img src={r.image} alt={r.title} className="w-full h-32 object-cover mb-3 group-hover:opacity-80 transition" />
+                  ) : (
+                    <div className="w-full h-32 bg-[#EAE5D9] mb-3 flex items-center justify-center">
+                      <span className="text-xs uppercase tracking-widest text-[#4A4A4A]">{r.category}</span>
+                    </div>
+                  )}
+                  <p className="text-sm font-medium group-hover:text-[#C5A059] transition line-clamp-2">{r.title || "(Untitled)"}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         </motion.div>
       </div>

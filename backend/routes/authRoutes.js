@@ -1,5 +1,5 @@
 import express from "express";
-import { register, login, logout, getMe, forgotPassword, resetPassword } from "../controllers/authController.js";
+import { register, login, logout, getMe, forgotPassword, resetPassword, changePassword } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authLimiter } from "../middleware/rateLimiter.js";
 
@@ -11,5 +11,6 @@ router.post("/logout",                              logout);
 router.get("/me",                      protect,     getMe);
 router.post("/forgot-password",        authLimiter, forgotPassword);
 router.post("/reset-password/:token",  authLimiter, resetPassword);
+router.put("/change-password",          protect,     changePassword);
 
 export default router;

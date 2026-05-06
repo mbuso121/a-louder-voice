@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "@phosphor-icons/react";
 import API from "../lib/api";
 import SEO from "../components/SEO";
+import SkeletonCard from "../components/SkeletonCard";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -13,17 +14,20 @@ export default function Analysis() {
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState("all");
   const navigate = useNavigate();
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 9;
 
   const topics = ["all", "relationships", "self-growth", "society"];
 
-  useEffect(() => { fetchArticles(); }, [selectedTopic]);
+  useEffect(() => { setPage(1); fetchArticles(); }, [selectedTopic]);
+  useEffect(() => { fetchArticles(); }, [page]);
 
   const fetchArticles = async () => {
     setLoading(true);
     try {
       const url = selectedTopic === "all"
-        ? `${API}/posts?category=analysis`
-        : `${API}/posts?category=analysis&topic=${selectedTopic}`;
+        ? `${API}/posts?category=analysis&page=${page}&limit=${PAGE_SIZE}`
+        : `${API}/posts?category=analysis&topic=${selectedTopic}&page=${page}&limit=${PAGE_SIZE}`;
       const res = await axios.get(url);
       setArticles(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
@@ -58,9 +62,11 @@ export default function Analysis() {
         </div>
 
         {loading ? (
-          <p className="text-center text-gray-500">Loading...</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
+          </div>
         ) : articles.length === 0 ? (
-          <p className="text-center text-gray-500">No articles yet.</p>
+          <p className="text-center text-gray-500 py-16">No articles yet.</p>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {articles.map((article, idx) => (
@@ -92,6 +98,21 @@ export default function Analysis() {
                 </div>
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {/* PAGINATION */}
+        {!loading && articles.length > 0 && (
+          <div className="flex justify-center gap-3 mt-12">
+            <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1}
+              className="px-4 py-2 text-xs uppercase tracking-widest bg-[#EAE5D9] hover:bg-black hover:text-white disabled:opacity-30 transition">
+              Prev
+            </button>
+            <span className="px-4 py-2 text-xs text-[#4A4A4A]">Page {page}</span>
+            <button onClick={() => setPage(p => p+1)} disabled={articles.length < PAGE_SIZE}
+              className="px-4 py-2 text-xs uppercase tracking-widest bg-[#EAE5D9] hover:bg-black hover:text-white disabled:opacity-30 transition">
+              Next
+            </button>
           </div>
         )}
 

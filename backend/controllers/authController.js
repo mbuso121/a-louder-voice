@@ -172,3 +172,22 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+// ── CHANGE PASSWORD ───────────────────────────────────────────────────────────
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: "Both fields are required" });
+    if (newPassword.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters" });
+
+    const user = await User.findById(req.user.id);
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) return res.status(401).json({ error: "Current password is incorrect" });
+
+    user.password = await bcrypt.hash(newPassword, 12);
+    await user.save();
+    res.json({ message: "Password changed successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};

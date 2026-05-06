@@ -40,7 +40,7 @@ router.post("/create", protect, adminOnly, uploadMedia, async (req, res) => {
 // ============================
 // SUBMIT (User — pending)
 // ============================
-router.post("/submit", async (req, res) => {
+router.post("/submit", protect, async (req, res) => {
   try {
     const { content, category, topic, title, is_anonymous, author_name } = req.body;
     const post = await Post.create({
@@ -50,9 +50,41 @@ router.post("/submit", async (req, res) => {
       content,
       is_anonymous: is_anonymous ?? true,
       author_name:  is_anonymous ? "" : (author_name || ""),
-      status:       "pending"
+      status:       "pending",
+      submittedBy:  req.user.id
     });
     res.json({ message: "Submitted. Pending review.", post });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ============================
+// SEARCH
+// ============================
+router.get("/search", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) return res.json([]);
+    const regex = new RegExp(q.trim(), "i");
+    const posts = await Post.find({
+      status: "approved",
+      $or: [{ title: regex }, { content: regex }]
+    }).sort({ createdAt: -1 }).limit(20);
+    res.json(posts);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================
+// MY SUBMISSIONS
+// ============================
+router.get("/my-submissions", protect, async (req, res) => {
+  try {
+    const posts = await Post.find({ submittedBy: req.user.id }).sort({ createdAt: -1 });
+    res.json(posts);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -67,7 +99,10 @@ router.get("/", async (req, res) => {
     let filter = { status: "approved" };
     if (category) filter.category = category;
     if (topic && topic !== "all") filter.topic = topic;
-    const posts = await Post.find(filter).sort({ createdAt: -1 });
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip  = (page - 1) * limit;
+    const posts = await Post.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit);
     res.json(posts);
   } catch (err) {
     res.status(500).json({ error: err.message });

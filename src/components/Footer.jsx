@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { InstagramLogo, TiktokLogo } from '@phosphor-icons/react';
 
@@ -6,11 +6,21 @@ const TIKTOK_URL   = "https://www.tiktok.com/@a_louder_voice?_r=1&_t=ZS-95yDz1IN
 const INSTAGRAM_URL = "https://www.instagram.com/a_louder_voice?igsh=MTlnaGdsNDY4Z2Z3NA==";
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+  const [subSuccess, setSubSuccess] = useState(false);
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    // Newsletter signup — replace with your email service (Mailchimp, etc)
+    setSubSuccess(true);
+    setEmail('');
+    setTimeout(() => setSubSuccess(false), 3000);
+  };
   return (
     <footer className="bg-[#0A0A0A] text-[#F4F0E6] py-16">
       <div className="max-w-7xl mx-auto px-6">
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
 
           {/* BRAND */}
           <div>
@@ -49,10 +59,31 @@ export default function Footer() {
                 ["/about",   "About"],
                 ["/contact", "Contact"],
                 ["/submit",  "Submit Content"],
+                ["/privacy", "Privacy Policy"],
+                ["/search",  "Search"],
               ].map(([to, label]) => (
                 <Link key={to} to={to} className="block text-sm hover:text-[#C5A059] transition">{label}</Link>
               ))}
             </div>
+          </div>
+
+          {/* NEWSLETTER */}
+          <div className="md:col-span-2">
+            <h4 className="text-xs tracking-[0.2em] uppercase text-[#C5A059] mb-4">Stay in the Loop</h4>
+            <p className="text-sm text-[#F4F0E6]/60 mb-3">Get new stories delivered to your inbox.</p>
+            {subSuccess ? (
+              <p className="text-sm text-[#C5A059]">Thank you for subscribing!</p>
+            ) : (
+              <form onSubmit={handleSubscribe} className="flex gap-2">
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="your@email.com" required
+                  className="flex-1 bg-white/10 border border-white/20 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-[#C5A059]" />
+                <button type="submit"
+                  className="bg-[#C5A059] text-black px-4 py-2 text-xs uppercase tracking-widest hover:bg-white transition flex-shrink-0">
+                  Subscribe
+                </button>
+              </form>
+            )}
           </div>
 
           {/* SOCIALS */}

@@ -7,10 +7,21 @@ export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [strength, setStrength] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const { register } = useAuth();
+
+  const calcStrength = (pw) => {
+    let s = 0;
+    if (pw.length >= 8) s++;
+    if (/[A-Z]/.test(pw)) s++;
+    if (/[0-9]/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    setStrength(s);
+  };
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -18,6 +29,16 @@ export default function Register() {
     setLoading(true);
     setError("");
 
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      setLoading(false);
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords don't match");
+      setLoading(false);
+      return;
+    }
     const result = await register(name, email, password);
 
     if (result.success) {
@@ -80,7 +101,35 @@ export default function Register() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); calcStrength(e.target.value); }}
+              className="w-full border-b border-[#0A0A0A]/20 bg-transparent py-2 focus:outline-none text-[#0A0A0A]"
+              required
+            />
+            {password && (
+              <div className="mt-2 flex gap-1">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className={`h-1 flex-1 rounded-full transition-all ${
+                    strength >= i
+                      ? strength <= 1 ? "bg-red-400"
+                      : strength === 2 ? "bg-yellow-400"
+                      : strength === 3 ? "bg-blue-400"
+                      : "bg-green-400"
+                      : "bg-[#D4CFC3]"
+                  }`} />
+                ))}
+                <span className="text-xs text-[#4A4A4A] ml-2">
+                  {strength <= 1 ? "Weak" : strength === 2 ? "Fair" : strength === 3 ? "Good" : "Strong"}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-[#C5A059] mb-2 block">Confirm Password</label>
+            <input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
               className="w-full border-b border-[#0A0A0A]/20 bg-transparent py-2 focus:outline-none text-[#0A0A0A]"
               required
             />

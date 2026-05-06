@@ -28,6 +28,7 @@ const postSchema = new mongoose.Schema({
   image: { type: String, default: null },
   video: { type: String, default: null },
   author: { type: String, default: "Admin" },
+  submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   status: {
     type: String,
     enum: ["pending", "approved", "rejected"],
