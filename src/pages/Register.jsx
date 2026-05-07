@@ -42,7 +42,7 @@ export default function Register() {
     const result = await register(name, email, password);
 
     if (result.success) {
-      navigate("/login");
+      navigate("/login", { state: { message: "Account created! Please log in." } });
     } else {
       setError(result.error || "Registration failed");
     }

@@ -60,6 +60,7 @@ export default function Footer() {
                 ["/contact", "Contact"],
                 ["/submit",  "Submit Content"],
                 ["/privacy", "Privacy Policy"],
+                ["/terms",   "Terms of Service"],
                 ["/search",  "Search"],
               ].map(([to, label]) => (
                 <Link key={to} to={to} className="block text-sm hover:text-[#C5A059] transition">{label}</Link>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { X, List } from '@phosphor-icons/react';
+import { X, List, MagnifyingGlass } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext'; // ✅ FIXED
 
@@ -9,8 +9,18 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const close = () => setOpen(false);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!searchQ.trim()) return;
+    navigate(`/search?q=${encodeURIComponent(searchQ)}`);
+    setSearchQ('');
+    setSearchOpen(false);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -30,7 +40,7 @@ export default function Header() {
   return (
     <>
       {/* HEADER */}
-      <header className="sticky top-0 z-50 bg-[#F4F0E6]/90 backdrop-blur-xl border-b border-black/5">
+      <header className="sticky top-0 z-50 bg-[#F4F0E6]/90 backdrop-blur-xl border-b border-black/5 relative">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
           {/* LOGO */}
@@ -50,7 +60,7 @@ export default function Header() {
                 key={item.to}
                 to={item.to}
                 className={`text-xs tracking-[0.2em] uppercase transition ${
-                  location.pathname === item.to
+                  location.pathname === item.to || location.pathname.startsWith(item.to + '/')
                     ? 'text-[#C5A059]'
                     : 'text-black hover:text-[#C5A059]'
                 }`}
@@ -74,6 +84,11 @@ export default function Header() {
                     Admin
                   </Link>
                 )}
+
+                <Link to="/profile"
+                  className="text-xs tracking-[0.2em] uppercase transition text-black hover:text-[#C5A059]">
+                  Profile
+                </Link>
 
                 <Link
                   to="/submit"
@@ -109,12 +124,37 @@ export default function Header() {
 
           </div>
 
+          {/* SEARCH ICON — desktop */}
+          <button onClick={() => setSearchOpen(!searchOpen)}
+            className="hidden md:block text-black hover:text-[#C5A059] transition ml-2"
+            aria-label="Search">
+            <MagnifyingGlass size={18} />
+          </button>
+
           {/* MOBILE BUTTON */}
           <button onClick={() => setOpen(true)} className="md:hidden">
             <List size={26} />
           </button>
         </div>
       </header>
+
+      {/* SEARCH DROPDOWN */}
+      <AnimatePresence>
+        {searchOpen && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            className="absolute top-full left-0 right-0 bg-[#F4F0E6] border-b border-black/10 px-6 py-4 z-40">
+            <form onSubmit={handleSearch} className="flex gap-3 max-w-lg mx-auto">
+              <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
+                placeholder="Search stories, letters, discussions..." autoFocus
+                className="flex-1 border-b-2 border-[#0A0A0A]/20 bg-transparent py-2 text-sm focus:outline-none focus:border-[#C5A059] transition" />
+              <button type="submit"
+                className="bg-[#0A0A0A] text-white px-5 py-2 text-xs uppercase tracking-widest hover:bg-[#C5A059] transition">
+                Search
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* MOBILE MENU */}
       <AnimatePresence>
@@ -147,7 +187,10 @@ export default function Header() {
                     key={item.to}
                     to={item.to}
                     onClick={close}
-                    className="text-2xl font-light"
+                    className={`text-2xl font-light transition ${
+                      location.pathname === item.to || location.pathname.startsWith(item.to + "/")
+                        ? "text-[#C5A059]" : "text-black"
+                    }`}
                   >
                     {item.label}
                   </Link>
@@ -168,6 +211,10 @@ export default function Header() {
                         Admin Dashboard
                       </Link>
                     )}
+
+                    <Link to="/profile" onClick={close} className="block mb-4 text-lg">
+                      My Profile
+                    </Link>
 
                     <Link
                       to="/submit"

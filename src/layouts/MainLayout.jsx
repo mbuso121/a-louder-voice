@@ -1,6 +1,8 @@
 import React from "react";
 import Header from "../components/Header"; // ✅ THIS IS REQUIRED
 import Footer from "../components/Footer";
+import CookieBanner from "../components/CookieBanner";
+import BackToTop from "../components/BackToTop";
 
 export default function MainLayout({ children }) {
   return (
@@ -16,6 +18,12 @@ export default function MainLayout({ children }) {
 
       {/* Footer */}
       <Footer />
+
+      {/* Cookie Consent */}
+      <CookieBanner />
+
+      {/* Back to Top */}
+      <BackToTop />
 
     </div>
   );

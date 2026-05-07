@@ -2,6 +2,7 @@ import express from "express";
 import Post from "../models/Post.js";
 import { uploadMedia } from "../config/cloudinary.js";
 import { protect } from "../middleware/authMiddleware.js";
+import { submitLimiter } from "../middleware/rateLimiter.js";
 import { adminOnly } from "../middleware/adminMiddleware.js";
 
 const router = express.Router();
@@ -40,7 +41,7 @@ router.post("/create", protect, adminOnly, uploadMedia, async (req, res) => {
 // ============================
 // SUBMIT (User — pending)
 // ============================
-router.post("/submit", protect, async (req, res) => {
+router.post("/submit", protect, submitLimiter, async (req, res) => {
   try {
     const { content, category, topic, title, is_anonymous, author_name } = req.body;
     const post = await Post.create({
@@ -67,11 +68,21 @@ router.get("/search", async (req, res) => {
   try {
     const { q } = req.query;
     if (!q || q.trim().length < 2) return res.json([]);
-    const regex = new RegExp(q.trim(), "i");
-    const posts = await Post.find({
-      status: "approved",
-      $or: [{ title: regex }, { content: regex }]
-    }).sort({ createdAt: -1 }).limit(20);
+    // Try $text search first (uses MongoDB text index — fast)
+    // Fall back to regex if text index not ready
+    let posts = [];
+    try {
+      posts = await Post.find(
+        { status: "approved", $text: { $search: q.trim() } },
+        { score: { $meta: "textScore" } }
+      ).sort({ score: { $meta: "textScore" } }).limit(20);
+    } catch {
+      const regex = new RegExp(q.trim(), "i");
+      posts = await Post.find({
+        status: "approved",
+        $or: [{ title: regex }, { content: regex }]
+      }).sort({ createdAt: -1 }).limit(20);
+    }
     res.json(posts);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -116,22 +127,58 @@ router.get("/:id", async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ error: "Post not found" });
-    res.json(post);
+
+    // Determine if current user liked this post
+    const token = req.headers.authorization?.split(" ")[1];
+    let identifier = req.ip || "anon";
+    if (token) {
+      try {
+        const jwt = (await import("jsonwebtoken")).default;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        identifier = `user_${decoded.id}`;
+      } catch {}
+    }
+
+    const userLiked = post.likedBy.includes(identifier);
+    res.json({ ...post.toObject(), userLiked });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // ============================
-// LIKE
+// LIKE (1 per user — toggle)
 // ============================
 router.post("/like/:id", async (req, res) => {
   try {
+    // Identifier: user ID from token (if logged in) or IP fallback
+    const token = req.headers.authorization?.split(" ")[1];
+    let identifier = req.ip || "anon";
+    if (token) {
+      try {
+        const jwt = (await import("jsonwebtoken")).default;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        identifier = `user_${decoded.id}`;
+      } catch {}
+    }
+
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ error: "Post not found" });
-    post.likes += 1;
+
+    const alreadyLiked = post.likedBy.includes(identifier);
+
+    if (alreadyLiked) {
+      // Unlike
+      post.likedBy = post.likedBy.filter(id => id !== identifier);
+      post.likes = Math.max(0, post.likes - 1);
+    } else {
+      // Like
+      post.likedBy.push(identifier);
+      post.likes += 1;
+    }
+
     await post.save();
-    res.json(post);
+    res.json({ ...post.toObject(), userLiked: !alreadyLiked });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

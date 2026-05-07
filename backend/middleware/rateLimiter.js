@@ -34,3 +34,6 @@ export const apiLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 200, mess
 
 // Upload limiter — 20 per hour
 export const uploadLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 20, message: "Upload limit reached. Try again in an hour." });
+
+// Submit limiter — 5 submissions per hour
+export const submitLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 5, message: "You've reached the submission limit. Please wait an hour before submitting again." });

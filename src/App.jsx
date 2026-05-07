@@ -20,6 +20,7 @@ import PostDetail     from "./pages/PostDetail";
 import Profile        from "./pages/Profile";
 import Search         from "./pages/Search";
 import PrivacyPolicy  from "./pages/PrivacyPolicy";
+import Terms          from "./pages/Terms";
 import NotFound       from "./pages/NotFound";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -42,6 +43,7 @@ export default function App() {
       <Route path="/about"      element={<MainLayout><About /></MainLayout>} />
       <Route path="/contact"    element={<MainLayout><Contact /></MainLayout>} />
       <Route path="/privacy"    element={<MainLayout><PrivacyPolicy /></MainLayout>} />
+      <Route path="/terms"      element={<MainLayout><Terms /></MainLayout>} />
       <Route path="/search"     element={<MainLayout><Search /></MainLayout>} />
       <Route path="/post/:id"   element={<MainLayout><PostDetail /></MainLayout>} />
 

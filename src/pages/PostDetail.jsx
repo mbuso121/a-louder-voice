@@ -19,6 +19,7 @@ export default function PostDetail() {
   const [commentText, setCommentText] = useState("");
   const [replyText, setReplyText] = useState({});
   const [openReply, setOpenReply] = useState(null);
+  const [userLiked, setUserLiked] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [related, setRelated] = useState([]);
   const [copied, setCopied] = useState(false);
@@ -38,6 +39,7 @@ export default function PostDetail() {
     try {
       const res = await axios.get(`${API}/posts/${id}`);
       setPost(res.data);
+      setUserLiked(res.data.userLiked || false);
       fetchRelated(res.data.category);
     } catch (err) {
       console.error(err);
@@ -154,7 +156,7 @@ export default function PostDetail() {
           <div className="flex items-center gap-4 text-xs text-[#4A4A4A] mb-8 pb-6 border-b border-[#0A0A0A]/10">
             <span>{post.is_anonymous ? "Anonymous" : (post.author_name || post.author || "Admin")}</span>
             <span>·</span>
-            <span>{new Date(post.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
+            <span>{new Date(post.createdAt).toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" })}</span>
           </div>
 
           {/* HERO IMAGE */}
@@ -216,10 +218,13 @@ export default function PostDetail() {
           <div className="flex items-center gap-8 mt-10 pt-8 border-t border-[#0A0A0A]/10">
             <button
               onClick={handleLike}
-              className="flex items-center gap-2 text-[#4A4A4A] hover:text-red-500 transition group"
+              className={`flex items-center gap-2 transition group ${
+                userLiked ? "text-red-500" : "text-[#4A4A4A] hover:text-red-500"
+              }`}
+              title={userLiked ? "Unlike" : "Like"}
             >
-              <Heart size={22} className="group-hover:scale-110 transition" />
-              <span className="text-sm">{post.likes || 0} likes</span>
+              <Heart size={22} weight={userLiked ? "fill" : "regular"} className="group-hover:scale-110 transition" />
+              <span className="text-sm">{post.likes || 0} {post.likes === 1 ? "like" : "likes"}</span>
             </button>
             <span className="flex items-center gap-2 text-[#4A4A4A] text-sm">
               <ChatCircle size={22} />

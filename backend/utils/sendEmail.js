@@ -121,3 +121,33 @@ export const sendPasswordChangedEmail = async ({ toEmail, userName }) => {
     </div>`
   });
 };
+
+export const sendSubmissionStatusEmail = async ({ toEmail, userName, status, postTitle, postUrl }) => {
+  const approved = status === "approved";
+  await createTransporter().sendMail({
+    from: `"A Louder Voice" <${process.env.EMAIL_USER}>`,
+    to: toEmail,
+    subject: approved
+      ? `Your submission was published — A Louder Voice`
+      : `Update on your submission — A Louder Voice`,
+    html: `<div style="max-width:560px;margin:40px auto;font-family:Georgia,serif;background:#fff;border:1px solid #E0DBD1">
+      <div style="background:#0A0A0A;padding:28px;text-align:center">
+        <h1 style="color:#F4F0E6;font-size:22px;font-weight:300;letter-spacing:2px;margin:0">A <span style="color:#C5A059">Louder</span> Voice</h1>
+      </div>
+      <div style="padding:36px;color:#0A0A0A;font-size:15px;line-height:1.8">
+        <p>Hi ${userName || "there"},</p>
+        ${approved
+          ? `<p>Great news! Your submission <strong>"${postTitle || "your story"}"</strong> has been reviewed and published on A Louder Voice.</p>
+             ${postUrl ? `<a href="${postUrl}" style="display:inline-block;background:#C5A059;color:#fff;text-decoration:none;padding:12px 28px;font-size:13px;letter-spacing:2px;text-transform:uppercase;margin:16px 0">Read It Live</a>` : ""}
+             <p>Thank you for sharing your voice with our community.</p>`
+          : `<p>Thank you for submitting to A Louder Voice. After careful review, your submission <strong>"${postTitle || "your story"}"</strong> was not approved for publication at this time.</p>
+             <p>This could be due to content guidelines, relevance, or editorial fit. You're welcome to submit other stories — we'd love to hear from you again.</p>`
+        }
+        <p>Warmly,<br/>The A Louder Voice Team</p>
+      </div>
+      <div style="background:#F4F0E6;padding:16px;text-align:center;font-size:11px;color:#999;border-top:1px solid #E0DBD1">
+        © ${new Date().getFullYear()} A Louder Voice · aloudervoice.co.za
+      </div>
+    </div>`
+  });
+};

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import API from "../lib/api";
+import { useAuth } from "../contexts/AuthContext";
 import SEO from "../components/SEO";
 
 const CATEGORIES = [
@@ -11,6 +12,8 @@ const CATEGORIES = [
 ];
 
 export default function Submit() {
+  const { user } = useAuth();
+  const token = localStorage.getItem("token");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -37,7 +40,9 @@ export default function Submit() {
     setError("");
 
     try {
-      await axios.post(`${API}/posts/submit`, formData);
+      await axios.post(`${API}/posts/submit`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setSuccess(true);
       setFormData({ category: "letters", topic: "love", title: "", content: "", is_anonymous: true, author_name: "" });
     } catch (err) {

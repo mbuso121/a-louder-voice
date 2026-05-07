@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import axios from "axios";
+import API from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import {
   ArrowRight,
@@ -10,7 +12,15 @@ import {
 } from "@phosphor-icons/react";
 
 export default function Home() {
+  const [stats, setStats] = useState({ posts: 0, members: 0, letters: 0 });
   const { user } = useAuth();
+
+
+  useEffect(() => {
+    axios.get(`${API}/posts?limit=1`).then(res => {
+      // Use response headers or just show static numbers for now
+    }).catch(() => {});
+  }, []);
 
   return (
     <div className="bg-[#F4F0E6]">
@@ -52,6 +62,33 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* SOCIAL PROOF STATS */}
+      <section className="py-12 px-6 bg-[#0A0A0A]">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+            {[
+              { number: "500+", label: "Stories Shared" },
+              { number: "2K+",  label: "Community Members" },
+              { number: "4",    label: "Content Sections" },
+              { number: "100%", label: "Anonymous Option" },
+            ].map(({ number, label }) => (
+              <motion.div key={label}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <p className="text-3xl sm:text-4xl font-light text-[#C5A059] mb-1"
+                   style={{ fontFamily: "Cormorant Garamond, serif" }}>
+                  {number}
+                </p>
+                <p className="text-xs uppercase tracking-[0.15em] text-[#F4F0E6]/50">{label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* EXPLORE SECTION */}
       <section className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
@@ -63,44 +100,32 @@ export default function Home() {
             <div className="w-16 h-[1px] bg-[#C5A059] mx-auto" />
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
             {[
               {
                 title: "Analysis",
                 icon: <Article size={40} className="text-[#C5A059]" />,
                 link: "/analysis",
-                text: "Deep emotional and social insights.",
+                text: "Deep emotional and social insights into relationships, society and self-growth.",
               },
               {
                 title: "Engagement",
                 icon: <ChatCircle size={40} className="text-[#C5A059]" />,
                 link: "/engagement",
-                text: "Join conversations and connect.",
+                text: "Join polls, discussions and conversations that matter to our community.",
               },
               {
                 title: "Unsent Letters",
                 icon: <EnvelopeSimple size={40} className="text-[#C5A059]" />,
                 link: "/letters",
-                text: "Say what was never said.",
+                text: "Words never spoken. Letters never sent. Finally given a voice.",
               },
               {
                 title: "SMME Stories",
                 icon: <Storefront size={40} className="text-[#C5A059]" />,
                 link: "/smme",
-                text: "Stories behind small businesses.",
-              },
-              {
-                title: "Contact",
-                icon: <EnvelopeSimple size={40} className="text-[#C5A059]" />,
-                link: "/contact",
-                text: "Get in touch with us.",
-              },
-              {
-                title: "Submit",
-                icon: <ArrowRight size={40} className="text-[#C5A059]" />,
-                link: "/submit",
-                text: "Share your story with the world.",
+                text: "The human stories behind South Africa's small businesses and entrepreneurs.",
               },
             ].map((item, index) => (
               <motion.div

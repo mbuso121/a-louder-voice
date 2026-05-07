@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { ArrowRight } from "@phosphor-icons/react";
+import { ArrowRight, Heart, ChatCircle } from "@phosphor-icons/react";
 import API from "../lib/api";
 import SEO from "../components/SEO";
 import SkeletonCard from "../components/SkeletonCard";
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 export default function Letters() {
   const [letters, setLetters] = useState([]);
@@ -104,7 +103,11 @@ export default function Letters() {
                         {new Date(letter.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
                       </span>
                       <span className="flex items-center text-[#C5A059] text-xs uppercase tracking-widest group-hover:translate-x-1 transition">
-                        Read <ArrowRight size={14} className="ml-1" />
+                      <div className="flex items-center gap-3 text-xs text-gray-400">
+                          <span className="flex items-center gap-1"><Heart size={12} /> {letter.likes || 0}</span>
+                          <span className="flex items-center gap-1"><ChatCircle size={12} /> {letter.comments?.length || 0}</span>
+                        </div>
+                        <span className="flex items-center text-[#C5A059] text-xs uppercase tracking-widest group-hover:translate-x-1 transition">Read <ArrowRight size={14} className="ml-1" /></span>
                       </span>
                     </div>
                   </div>

@@ -8,9 +8,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMsg = location.state?.message || "";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,7 +54,11 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
 
-          {error && (
+          {successMsg && (
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 text-sm mb-2">{successMsg}</div>
+        )}
+
+        {error && (
             <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">
               {error}
             </div>
@@ -73,13 +81,19 @@ export default function Login() {
             <label className="block text-xs tracking-[0.2em] uppercase text-[#C5A059] mb-2">
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border-b border-[#0A0A0A]/20 bg-transparent py-2 focus:outline-none text-[#0A0A0A]"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPw ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border-b border-[#0A0A0A]/20 bg-transparent py-2 focus:outline-none text-[#0A0A0A] pr-16"
+                required
+              />
+              <button type="button" onClick={() => setShowPw(!showPw)}
+                className="absolute right-0 top-2 text-xs text-[#4A4A4A] hover:text-[#C5A059] uppercase tracking-widest transition">
+                {showPw ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
           <button

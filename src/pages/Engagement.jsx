@@ -8,7 +8,6 @@ import API from "../lib/api";
 import SEO from "../components/SEO";
 import SkeletonCard from "../components/SkeletonCard";
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 // ─── MODAL (full Instagram-style post view) ───────────────────────────────────
 function PostModal({ post, onClose, onLike, onComment, onReply, user }) {
@@ -212,6 +211,7 @@ function PostModal({ post, onClose, onLike, onComment, onReply, user }) {
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function Engagement() {
   const { user } = useAuth();
+  const [likedPosts, setLikedPosts] = useState(new Set());
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);

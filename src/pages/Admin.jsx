@@ -27,6 +27,7 @@ export default function Admin() {
   });
   const [creating, setCreating] = useState(false);
   const [createSuccess, setCreateSuccess] = useState(false);
+  const [stats, setStats] = useState(null);
 
   const token = localStorage.getItem("token");
   const authHeader = { headers: { Authorization: `Bearer ${token}` } };
@@ -38,12 +39,14 @@ export default function Admin() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [pendingRes, allRes] = await Promise.all([
+      const [pendingRes, allRes, statsRes] = await Promise.all([
         axios.get(`${API}/admin/pending`, authHeader),
-        axios.get(`${API}/admin/posts`, authHeader)
+        axios.get(`${API}/admin/posts`, authHeader),
+        axios.get(`${API}/admin/stats`, authHeader)
       ]);
       setPendingPosts(Array.isArray(pendingRes.data) ? pendingRes.data : []);
       setAllPosts(Array.isArray(allRes.data) ? allRes.data : []);
+      setStats(statsRes.data);
     } catch (err) {
       console.error("Admin fetch error:", err);
     } finally {
@@ -143,6 +146,27 @@ export default function Admin() {
             Logout
           </button>
         </div>
+
+
+        {/* STATS */}
+        {stats && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+            {[
+              { label: "Total Posts", value: stats.total },
+              { label: "Pending", value: stats.pending, highlight: stats.pending > 0 },
+              { label: "Published", value: stats.approved },
+              { label: "Members", value: stats.members },
+            ].map(({ label, value, highlight }) => (
+              <div key={label} className={`p-5 text-center border ${highlight ? "bg-yellow-50 border-yellow-200" : "bg-[#EAE5D9] border-transparent"}`}>
+                <p className={`text-3xl font-light mb-1 ${highlight ? "text-yellow-700" : "text-[#C5A059]"}`}
+                   style={{ fontFamily: "Cormorant Garamond, serif" }}>
+                  {value ?? "—"}
+                </p>
+                <p className="text-xs uppercase tracking-widest text-[#4A4A4A]">{label}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* TABS */}
         <div className="flex gap-4 mb-8 border-b border-[#0A0A0A]/10">

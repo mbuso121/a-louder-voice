@@ -34,7 +34,8 @@ const postSchema = new mongoose.Schema({
     enum: ["pending", "approved", "rejected"],
     default: "approved"
   },
-  likes: { type: Number, default: 0 },
+  likes:   { type: Number, default: 0 },
+  likedBy: [{ type: String }], // stores user IDs or IP to prevent double-likes
   comments: [commentSchema],
   // For user-submitted content
   is_anonymous: { type: Boolean, default: false },
@@ -46,4 +47,5 @@ const postSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+postSchema.index({ title: "text", content: "text" }); // enables $text search
 export default mongoose.model("Post", postSchema);

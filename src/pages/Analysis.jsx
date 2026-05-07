@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { ArrowRight } from "@phosphor-icons/react";
+import { ArrowRight, Heart, ChatCircle } from "@phosphor-icons/react";
 import API from "../lib/api";
 import SEO from "../components/SEO";
 import SkeletonCard from "../components/SkeletonCard";
@@ -89,7 +89,10 @@ export default function Analysis() {
                     <h2 className="text-xl mb-3 flex-1" style={{ fontFamily: "Cormorant Garamond, serif" }}>{article.title}</h2>
                     <p className="text-sm text-gray-600 mb-4 line-clamp-2">{article.content}</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-400">{article.author || "Admin"}</span>
+                      <div className="flex items-center gap-3 text-xs text-gray-400">
+                        <span className="flex items-center gap-1"><Heart size={12} /> {article.likes || 0}</span>
+                        <span className="flex items-center gap-1"><ChatCircle size={12} /> {article.comments?.length || 0}</span>
+                      </div>
                       <span className="flex items-center text-[#C5A059] text-xs uppercase tracking-widest group-hover:translate-x-1 transition">
                         Read <ArrowRight size={14} className="ml-1" />
                       </span>
