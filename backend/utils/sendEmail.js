@@ -1,13 +1,22 @@
 import nodemailer from "nodemailer";
-
+ 
 const createTransporter = () => nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,         // TLS via STARTTLS on port 587
+  requireTLS: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
-  }
+  },
+  tls: {
+    rejectUnauthorized: false  // needed on some cloud hosts
+  },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000
 });
-
+ 
 export const sendPasswordResetEmail = async ({ toEmail, resetUrl, userName }) => {
   await createTransporter().sendMail({
     from: `"A Louder Voice" <${process.env.EMAIL_USER}>`,
@@ -39,7 +48,7 @@ export const sendPasswordResetEmail = async ({ toEmail, resetUrl, userName }) =>
     </div></body></html>`
   });
 };
-
+ 
 export const sendContactEmail = async ({ fromName, fromEmail, subject: subj, message }) => {
   const t = createTransporter();
   await t.sendMail({
@@ -69,7 +78,7 @@ export const sendContactEmail = async ({ fromName, fromEmail, subject: subj, mes
       <div class="f">Sent via aloudervoice.co.za · Hit Reply to respond directly</div>
     </div></body></html>`
   });
-
+ 
   await t.sendMail({
     from: `"A Louder Voice" <${process.env.EMAIL_USER}>`,
     to: fromEmail,
@@ -98,7 +107,7 @@ export const sendContactEmail = async ({ fromName, fromEmail, subject: subj, mes
     </div></body></html>`
   });
 };
-
+ 
 export const sendPasswordChangedEmail = async ({ toEmail, userName }) => {
   await createTransporter().sendMail({
     from: `"A Louder Voice" <${process.env.EMAIL_USER}>`,
@@ -121,7 +130,7 @@ export const sendPasswordChangedEmail = async ({ toEmail, userName }) => {
     </div>`
   });
 };
-
+ 
 export const sendSubmissionStatusEmail = async ({ toEmail, userName, status, postTitle, postUrl }) => {
   const approved = status === "approved";
   await createTransporter().sendMail({
