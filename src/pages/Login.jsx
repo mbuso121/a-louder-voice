@@ -1,28 +1,28 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
-
+import { Eye, EyeSlash } from '@phosphor-icons/react';
+ 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const [showPw, setShowPw] = useState(false);
-
+ 
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const successMsg = location.state?.message || "";
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
+ 
     const result = await login(email, password);
-
+ 
     if (result.success) {
       const role = result.user?.role || "user";
       if (role === "admin") {
@@ -33,10 +33,10 @@ export default function Login() {
     } else {
       setError(result.error || "Login failed");
     }
-
+ 
     setLoading(false);
   };
-
+ 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F4F0E6] px-6 py-12">
       <motion.div
@@ -51,19 +51,19 @@ export default function Login() {
           </h1>
           <p className="text-sm text-[#4A4A4A]">Sign in to continue your journey</p>
         </div>
-
+ 
         <form onSubmit={handleSubmit} className="space-y-6">
-
+ 
           {successMsg && (
           <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 text-sm mb-2">{successMsg}</div>
         )}
-
+ 
         {error && (
             <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">
               {error}
             </div>
           )}
-
+ 
           <div>
             <label className="block text-xs tracking-[0.2em] uppercase text-[#C5A059] mb-2">
               Email
@@ -76,7 +76,7 @@ export default function Login() {
               required
             />
           </div>
-
+ 
           <div>
             <label className="block text-xs tracking-[0.2em] uppercase text-[#C5A059] mb-2">
               Password
@@ -95,7 +95,7 @@ export default function Login() {
               </button>
             </div>
           </div>
-
+ 
           <button
             type="submit"
             disabled={loading}
@@ -104,13 +104,13 @@ export default function Login() {
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
-
+ 
         <div className="text-right mt-1 mb-4">
             <Link to="/forgot-password" className="text-xs text-[#4A4A4A] hover:text-[#C5A059] transition">
               Forgot your password?
             </Link>
           </div>
-
+ 
         <div className="mt-6 text-center text-sm">
           <p className="text-[#4A4A4A]">
             Don't have an account?{' '}
