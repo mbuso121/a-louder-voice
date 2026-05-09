@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
@@ -10,21 +11,21 @@ import {
   EnvelopeSimple,
   Storefront,
 } from "@phosphor-icons/react";
-
+ 
 export default function Home() {
   const [stats, setStats] = useState({ posts: 0, members: 0, letters: 0 });
   const { user } = useAuth();
-
-
+ 
+ 
   useEffect(() => {
     axios.get(`${API}/posts?limit=1`).then(res => {
       // Use response headers or just show static numbers for now
     }).catch(() => {});
   }, []);
-
+ 
   return (
     <div className="bg-[#F4F0E6]">
-
+ 
       {/* HERO */}
       <section
         className="min-h-screen flex items-center justify-center text-center relative"
@@ -36,7 +37,7 @@ export default function Home() {
         }}
       >
         <div className="absolute inset-0 bg-black/70" />
-
+ 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -45,11 +46,11 @@ export default function Home() {
           <h1 className="text-5xl sm:text-6xl lg:text-7xl text-white mb-6 italic">
             Your Unspoken Journey
           </h1>
-
+ 
           <p className="text-lg sm:text-xl text-white/90 mb-8">
             A Place to Say What You Cannot Say Out Loud
           </p>
-
+ 
           {user ? (
             <Link to="/submit" className="btn-gold">
               Share Your Voice
@@ -61,7 +62,7 @@ export default function Home() {
           )}
         </motion.div>
       </section>
-
+ 
       {/* SOCIAL PROOF STATS */}
       <section className="py-12 px-6 bg-[#0A0A0A]">
         <div className="max-w-5xl mx-auto">
@@ -88,20 +89,20 @@ export default function Home() {
           </div>
         </div>
       </section>
-
+ 
       {/* EXPLORE SECTION */}
       <section className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
-
+ 
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl mb-4">
               Explore Our Spaces
             </h2>
             <div className="w-16 h-[1px] bg-[#C5A059] mx-auto" />
           </div>
-
+ 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
+ 
             {[
               {
                 title: "Analysis",
@@ -136,21 +137,21 @@ export default function Home() {
               >
                 <Link to={item.link} className="block group">
                   <div className="bg-[#EAE5D9] border p-8 h-full hover:border-[#C5A059] transition">
-
+ 
                     {item.icon}
-
+ 
                     <h3 className="text-2xl mt-4 mb-2">
                       {item.title}
                     </h3>
-
+ 
                     <p className="text-sm text-gray-600 mb-4">
                       {item.text}
                     </p>
-
+ 
                     <span className="flex items-center text-[#C5A059] text-sm uppercase tracking-widest group-hover:translate-x-2 transition">
                       Explore <ArrowRight size={16} className="ml-2" />
                     </span>
-
+ 
                   </div>
                 </Link>
               </motion.div>
@@ -158,21 +159,21 @@ export default function Home() {
           </div>
         </div>
       </section>
-
+ 
       {/* LOGIN / REGISTER CTA */}
       <section className="py-20 px-6 bg-[#EAE5D9]">
         <div className="max-w-4xl mx-auto text-center">
-
+ 
           {!user ? (
             <>
               <h2 className="text-3xl mb-6 font-light">
                 Join the Conversation
               </h2>
-
+ 
               <p className="mb-8 text-[#0A0A0A]/80">
                 Create an account to share your voice and connect with others.
               </p>
-
+ 
               <div className="flex justify-center gap-4">
                 <Link to="/login" className="btn-outline">
                   Login
@@ -187,20 +188,20 @@ export default function Home() {
               <h2 className="text-3xl mb-6 font-light">
                 Welcome Back 👋
               </h2>
-
+ 
               <p className="mb-8 text-[#0A0A0A]/80">
                 Continue your journey and share your voice.
               </p>
-
+ 
               <Link to="/engagement" className="btn-primary">
                 Go to Engagement
               </Link>
             </>
           )}
-
+ 
         </div>
       </section>
-
+ 
     </div>
   );
 }
