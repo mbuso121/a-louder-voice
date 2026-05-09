@@ -121,7 +121,7 @@ export const sendPasswordChangedEmail = async ({ toEmail, userName }) => {
         <p>Hi ${userName || "there"},</p>
         <p>Your password has been successfully changed.</p>
         <p>If you did NOT make this change, contact us immediately at
-          <a href="mailto:TshegoIsithebe@gmail.com" style="color:#C5A059">TshegoIsithebe@gmail.com</a>
+          <a href="mailto:tshegolsithebe@gmail.com" style="color:#C5A059">tshegolsithebe@gmail.com</a>
         </p>
       </div>
       <div style="background:#F4F0E6;padding:16px;text-align:center;font-size:11px;color:#999;border-top:1px solid #E0DBD1">
