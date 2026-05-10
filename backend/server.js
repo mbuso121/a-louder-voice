@@ -82,6 +82,23 @@ app.use("/api/contact", contactRoutes);
  
 app.get("/api/health", (req, res) => res.json({ status: "ok", ts: Date.now() }));
  
+// ── EMAIL TEST ────────────────────────────────────────────────────────────────
+app.get("/api/test-email", async (req, res) => {
+  try {
+    const { sendContactEmail } = await import("./utils/sendEmail.js");
+    await sendContactEmail({
+      fromName: "Test",
+      fromEmail: process.env.EMAIL_USER,
+      subject: "Test email from A Louder Voice",
+      message: "If you see this, email is working!"
+    });
+    res.json({ success: true, sent_to: process.env.CONTACT_EMAIL });
+  } catch (err) {
+    console.error("Email test failed:", err.message, err.code);
+    res.status(500).json({ error: err.message, code: err.code });
+  }
+});
+ 
 // ── ERROR HANDLER ─────────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   const status = err.status || err.statusCode || 500;
