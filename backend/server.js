@@ -67,10 +67,10 @@ app.use(sanitizeBody);
 // ── DATABASE ──────────────────────────────────────────────────────────────────
 const mongoOptions = { maxPoolSize: 100, serverSelectionTimeoutMS: 5000, socketTimeoutMS: 45000, family: 4 };
 mongoose.connect(process.env.MONGO_URI, mongoOptions)
-  .then(() => console.log(" MongoDB connected"))
-  .catch(err => console.error(" MongoDB:", err));
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.error("❌ MongoDB:", err));
 mongoose.connection.on("disconnected", () => {
-  console.warn("  MongoDB disconnected — reconnecting...");
+  console.warn("⚠️  MongoDB disconnected — reconnecting...");
   mongoose.connect(process.env.MONGO_URI, mongoOptions).catch(console.error);
 });
  
@@ -116,4 +116,4 @@ app.use((err, req, res, next) => {
 app.use((req, res) => res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` }));
  
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(` Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
