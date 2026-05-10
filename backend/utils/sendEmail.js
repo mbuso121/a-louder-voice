@@ -1,20 +1,21 @@
 import nodemailer from "nodemailer";
  
+// Try port 465 (SSL) first — more reliable on Railway
 const createTransporter = () => nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 587,
-  secure: false,         // TLS via STARTTLS on port 587
-  requireTLS: true,
+  port: 465,
+  secure: true,          // SSL on port 465
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
   tls: {
-    rejectUnauthorized: false  // needed on some cloud hosts
+    rejectUnauthorized: false
   },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 20000,
+  pool: false
 });
  
 export const sendPasswordResetEmail = async ({ toEmail, resetUrl, userName }) => {
