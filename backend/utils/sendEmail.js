@@ -1,26 +1,13 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
  
-// Try port 465 (SSL) first — more reliable on Railway
-const createTransporter = () => nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,          // SSL on port 465
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 15000,
-  greetingTimeout: 15000,
-  socketTimeout: 20000,
-  pool: false
-});
+const getResend = () => new Resend(process.env.RESEND_API_KEY);
  
+const FROM = "A Louder Voice <onboarding@resend.dev>"; // Change to noreply@aloudervoice.co.za after domain verified
+ 
+// ── PASSWORD RESET ────────────────────────────────────────────────────────────
 export const sendPasswordResetEmail = async ({ toEmail, resetUrl, userName }) => {
-  await createTransporter().sendMail({
-    from: `"A Louder Voice" <${process.env.EMAIL_USER}>`,
+  await getResend().emails.send({
+    from: FROM,
     to: toEmail,
     subject: "Reset Your Password — A Louder Voice",
     html: `<!DOCTYPE html><html><head><style>
@@ -40,7 +27,7 @@ export const sendPasswordResetEmail = async ({ toEmail, resetUrl, userName }) =>
         <p>We received a request to reset your A Louder Voice password.</p>
         <p>Click below to set a new password. This link expires in <strong>1 hour</strong>.</p>
         <a href="${resetUrl}" class="btn">Reset My Password</a>
-        <p class="note">If you didn't request this, ignore this email — your password stays the same.</p>
+        <p class="note">If you didn't request this, ignore this email.</p>
         <p class="note">Link not working? Copy and paste:<br/>
           <a href="${resetUrl}" style="color:#C5A059;word-break:break-all">${resetUrl}</a>
         </p>
@@ -50,13 +37,14 @@ export const sendPasswordResetEmail = async ({ toEmail, resetUrl, userName }) =>
   });
 };
  
-export const sendContactEmail = async ({ fromName, fromEmail, subject: subj, message }) => {
-  const t = createTransporter();
-  await t.sendMail({
-    from: `"A Louder Voice Contact" <${process.env.EMAIL_USER}>`,
+// ── CONTACT FORM ──────────────────────────────────────────────────────────────
+export const sendContactEmail = async ({ fromName, fromEmail, subject, message }) => {
+  // Send message to admin
+  await getResend().emails.send({
+    from: FROM,
     to: process.env.CONTACT_EMAIL,
-    replyTo: fromEmail,
-    subject: `[Contact] ${subj || "New message"} — from ${fromName}`,
+    reply_to: fromEmail,
+    subject: `[Contact] ${subject || "New message"} — from ${fromName}`,
     html: `<!DOCTYPE html><html><head><style>
       body{margin:0;padding:0;background:#F4F0E6;font-family:Georgia,serif}
       .c{max-width:560px;margin:40px auto;background:#fff;border:1px solid #E0DBD1}
@@ -71,7 +59,7 @@ export const sendContactEmail = async ({ fromName, fromEmail, subject: subj, mes
       <div class="b">
         <div class="label">From</div><div class="val">${fromName}</div>
         <div class="label">Email</div><div class="val"><a href="mailto:${fromEmail}" style="color:#C5A059">${fromEmail}</a></div>
-        <div class="label">Subject</div><div class="val">${subj || "General enquiry"}</div>
+        <div class="label">Subject</div><div class="val">${subject || "General enquiry"}</div>
         <hr/>
         <div class="label">Message</div>
         <div class="val">${message.replace(/\n/g, "<br/>")}</div>
@@ -80,8 +68,9 @@ export const sendContactEmail = async ({ fromName, fromEmail, subject: subj, mes
     </div></body></html>`
   });
  
-  await t.sendMail({
-    from: `"A Louder Voice" <${process.env.EMAIL_USER}>`,
+  // Send confirmation to sender
+  await getResend().emails.send({
+    from: FROM,
     to: fromEmail,
     subject: "We got your message — A Louder Voice",
     html: `<!DOCTYPE html><html><head><style>
@@ -109,9 +98,41 @@ export const sendContactEmail = async ({ fromName, fromEmail, subject: subj, mes
   });
 };
  
+// ── SUBMISSION STATUS ─────────────────────────────────────────────────────────
+export const sendSubmissionStatusEmail = async ({ toEmail, userName, status, postTitle, postUrl }) => {
+  const approved = status === "approved";
+  await getResend().emails.send({
+    from: FROM,
+    to: toEmail,
+    subject: approved
+      ? "Your submission was published — A Louder Voice"
+      : "Update on your submission — A Louder Voice",
+    html: `<div style="max-width:560px;margin:40px auto;font-family:Georgia,serif;background:#fff;border:1px solid #E0DBD1">
+      <div style="background:#0A0A0A;padding:28px;text-align:center">
+        <h1 style="color:#F4F0E6;font-size:22px;font-weight:300;letter-spacing:2px;margin:0">A <span style="color:#C5A059">Louder</span> Voice</h1>
+      </div>
+      <div style="padding:36px;color:#0A0A0A;font-size:15px;line-height:1.8">
+        <p>Hi ${userName || "there"},</p>
+        ${approved
+          ? `<p>Your submission <strong>"${postTitle || "your story"}"</strong> has been published!</p>
+             ${postUrl ? `<a href="${postUrl}" style="display:inline-block;background:#C5A059;color:#fff;text-decoration:none;padding:12px 28px;font-size:13px;letter-spacing:2px;text-transform:uppercase;margin:16px 0">Read It Live</a>` : ""}
+             <p>Thank you for sharing your voice.</p>`
+          : `<p>After careful review, your submission <strong>"${postTitle || "your story"}"</strong> was not approved at this time.</p>
+             <p>You're welcome to submit other stories — we'd love to hear from you again.</p>`
+        }
+        <p>Warmly,<br/>The A Louder Voice Team</p>
+      </div>
+      <div style="background:#F4F0E6;padding:16px;text-align:center;font-size:11px;color:#999;border-top:1px solid #E0DBD1">
+        © ${new Date().getFullYear()} A Louder Voice · aloudervoice.co.za
+      </div>
+    </div>`
+  });
+};
+ 
+// ── PASSWORD CHANGED ──────────────────────────────────────────────────────────
 export const sendPasswordChangedEmail = async ({ toEmail, userName }) => {
-  await createTransporter().sendMail({
-    from: `"A Louder Voice" <${process.env.EMAIL_USER}>`,
+  await getResend().emails.send({
+    from: FROM,
     to: toEmail,
     subject: "Your password was changed — A Louder Voice",
     html: `<div style="max-width:560px;margin:40px auto;font-family:Georgia,serif;background:#fff;border:1px solid #E0DBD1">
@@ -127,36 +148,6 @@ export const sendPasswordChangedEmail = async ({ toEmail, userName }) => {
       </div>
       <div style="background:#F4F0E6;padding:16px;text-align:center;font-size:11px;color:#999;border-top:1px solid #E0DBD1">
         © ${new Date().getFullYear()} A Louder Voice
-      </div>
-    </div>`
-  });
-};
- 
-export const sendSubmissionStatusEmail = async ({ toEmail, userName, status, postTitle, postUrl }) => {
-  const approved = status === "approved";
-  await createTransporter().sendMail({
-    from: `"A Louder Voice" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
-    subject: approved
-      ? `Your submission was published — A Louder Voice`
-      : `Update on your submission — A Louder Voice`,
-    html: `<div style="max-width:560px;margin:40px auto;font-family:Georgia,serif;background:#fff;border:1px solid #E0DBD1">
-      <div style="background:#0A0A0A;padding:28px;text-align:center">
-        <h1 style="color:#F4F0E6;font-size:22px;font-weight:300;letter-spacing:2px;margin:0">A <span style="color:#C5A059">Louder</span> Voice</h1>
-      </div>
-      <div style="padding:36px;color:#0A0A0A;font-size:15px;line-height:1.8">
-        <p>Hi ${userName || "there"},</p>
-        ${approved
-          ? `<p>Great news! Your submission <strong>"${postTitle || "your story"}"</strong> has been reviewed and published on A Louder Voice.</p>
-             ${postUrl ? `<a href="${postUrl}" style="display:inline-block;background:#C5A059;color:#fff;text-decoration:none;padding:12px 28px;font-size:13px;letter-spacing:2px;text-transform:uppercase;margin:16px 0">Read It Live</a>` : ""}
-             <p>Thank you for sharing your voice with our community.</p>`
-          : `<p>Thank you for submitting to A Louder Voice. After careful review, your submission <strong>"${postTitle || "your story"}"</strong> was not approved for publication at this time.</p>
-             <p>This could be due to content guidelines, relevance, or editorial fit. You're welcome to submit other stories — we'd love to hear from you again.</p>`
-        }
-        <p>Warmly,<br/>The A Louder Voice Team</p>
-      </div>
-      <div style="background:#F4F0E6;padding:16px;text-align:center;font-size:11px;color:#999;border-top:1px solid #E0DBD1">
-        © ${new Date().getFullYear()} A Louder Voice · aloudervoice.co.za
       </div>
     </div>`
   });
