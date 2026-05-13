@@ -2,7 +2,8 @@ import { Resend } from "resend";
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY);
 
-const FROM = "A Louder Voice <noreply@aloudervoice.co.za>";
+const FROM = "A Louder Voice <noreply@aloudervoice.co.za>"; // Change to noreply@aloudervoice.co.za after domain verified
+
 // ── PASSWORD RESET ────────────────────────────────────────────────────────────
 export const sendPasswordResetEmail = async ({ toEmail, resetUrl, userName }) => {
   await getResend().emails.send({
@@ -41,7 +42,7 @@ export const sendContactEmail = async ({ fromName, fromEmail, subject, message }
   // Send message to admin
   await getResend().emails.send({
     from: FROM,
-    to: process.env.CONTACT_EMAIL,
+    to: process.env.CONTACT_EMAIL.split(",").map(e => e.trim()),
     reply_to: fromEmail,
     subject: `[Contact] ${subject || "New message"} — from ${fromName}`,
     html: `<!DOCTYPE html><html><head><style>
