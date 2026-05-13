@@ -22,7 +22,7 @@ import Search         from "./pages/Search";
 import PrivacyPolicy  from "./pages/PrivacyPolicy";
 import Terms          from "./pages/Terms";
 import NotFound       from "./pages/NotFound";
-import VerifyEmail from "./pages/Verifyemail";
+import VerifyEmail    from "./pages/Verifyemail";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
