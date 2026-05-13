@@ -2,8 +2,7 @@ import { Resend } from "resend";
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY);
 
-const FROM = "A Louder Voice <onboarding@resend.dev>"; // Change to noreply@aloudervoice.co.za after domain verified
-
+const FROM = "A Louder Voice <noreply@aloudervoice.co.za>";
 // ── PASSWORD RESET ────────────────────────────────────────────────────────────
 export const sendPasswordResetEmail = async ({ toEmail, resetUrl, userName }) => {
   await getResend().emails.send({
