@@ -1,9 +1,9 @@
 import { Resend } from "resend";
- 
+
 const getResend = () => new Resend(process.env.RESEND_API_KEY);
- 
+
 const FROM = "A Louder Voice <onboarding@resend.dev>"; // Change to noreply@aloudervoice.co.za after domain verified
- 
+
 // ── PASSWORD RESET ────────────────────────────────────────────────────────────
 export const sendPasswordResetEmail = async ({ toEmail, resetUrl, userName }) => {
   await getResend().emails.send({
@@ -36,7 +36,7 @@ export const sendPasswordResetEmail = async ({ toEmail, resetUrl, userName }) =>
     </div></body></html>`
   });
 };
- 
+
 // ── CONTACT FORM ──────────────────────────────────────────────────────────────
 export const sendContactEmail = async ({ fromName, fromEmail, subject, message }) => {
   // Send message to admin
@@ -67,7 +67,7 @@ export const sendContactEmail = async ({ fromName, fromEmail, subject, message }
       <div class="f">Sent via aloudervoice.co.za · Hit Reply to respond directly</div>
     </div></body></html>`
   });
- 
+
   // Send confirmation to sender
   await getResend().emails.send({
     from: FROM,
@@ -97,7 +97,7 @@ export const sendContactEmail = async ({ fromName, fromEmail, subject, message }
     </div></body></html>`
   });
 };
- 
+
 // ── SUBMISSION STATUS ─────────────────────────────────────────────────────────
 export const sendSubmissionStatusEmail = async ({ toEmail, userName, status, postTitle, postUrl }) => {
   const approved = status === "approved";
@@ -128,7 +128,7 @@ export const sendSubmissionStatusEmail = async ({ toEmail, userName, status, pos
     </div>`
   });
 };
- 
+
 // ── PASSWORD CHANGED ──────────────────────────────────────────────────────────
 export const sendPasswordChangedEmail = async ({ toEmail, userName }) => {
   await getResend().emails.send({
@@ -150,5 +150,35 @@ export const sendPasswordChangedEmail = async ({ toEmail, userName }) => {
         © ${new Date().getFullYear()} A Louder Voice
       </div>
     </div>`
+  });
+};
+
+// ── EMAIL VERIFICATION ────────────────────────────────────────────────────────
+export const sendVerificationEmail = async ({ toEmail, verifyUrl, userName }) => {
+  await getResend().emails.send({
+    from: FROM,
+    to: toEmail,
+    subject: "Verify your email — A Louder Voice",
+    html: `<!DOCTYPE html><html><head><style>
+      body{margin:0;padding:0;background:#F4F0E6;font-family:Georgia,serif}
+      .c{max-width:560px;margin:40px auto;background:#fff;border:1px solid #E0DBD1}
+      .h{background:#0A0A0A;padding:32px 40px;text-align:center}
+      .h h1{color:#F4F0E6;font-size:24px;font-weight:300;letter-spacing:2px;margin:0}
+      .b{padding:40px}.b p{color:#0A0A0A;font-size:15px;line-height:1.8}
+      .btn{display:block;width:fit-content;margin:28px auto;background:#C5A059;color:#fff;
+           text-decoration:none;padding:14px 36px;font-size:13px;letter-spacing:2px;text-transform:uppercase}
+      .note{font-size:12px;color:#999;margin-top:20px}
+      .f{background:#F4F0E6;padding:20px 40px;text-align:center;font-size:11px;color:#999;border-top:1px solid #E0DBD1}
+    </style></head><body><div class="c">
+      <div class="h"><h1>A <span style="color:#C5A059">Louder</span> Voice</h1></div>
+      <div class="b">
+        <p>Hi ${userName || "there"},</p>
+        <p>Welcome to A Louder Voice! Please verify your email address to activate your account.</p>
+        <a href="${verifyUrl}" class="btn">Verify My Email</a>
+        <p class="note">This link expires in 24 hours.</p>
+        <p class="note">Didn't create an account? You can safely ignore this email.</p>
+      </div>
+      <div class="f">© ${new Date().getFullYear()} A Louder Voice · aloudervoice.co.za</div>
+    </div></body></html>`
   });
 };

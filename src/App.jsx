@@ -22,7 +22,7 @@ import Search         from "./pages/Search";
 import PrivacyPolicy  from "./pages/PrivacyPolicy";
 import Terms          from "./pages/Terms";
 import NotFound       from "./pages/NotFound";
-
+import VerifyEmail from "./pages/Verifyemail";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -33,6 +33,7 @@ export default function App() {
       <Route path="/register"                element={<Register />} />
       <Route path="/forgot-password"         element={<ForgotPassword />} />
       <Route path="/reset-password/:token"   element={<ResetPassword />} />
+      <Route path="/verify-email/:token"     element={<VerifyEmail />} />
 
       {/* PUBLIC */}
       <Route path="/"           element={<MainLayout><Home /></MainLayout>} />

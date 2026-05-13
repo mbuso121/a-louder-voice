@@ -42,7 +42,8 @@ export function AuthProvider({ children }) {
       setUser(data.user);
       return { success: true, user: data.user };
     } catch (err) {
-      return { success: false, error: err.response?.data?.error || "Login failed" };
+      const unverified = err.response?.data?.unverified || false;
+      return { success: false, error: err.response?.data?.error || "Login failed", unverified };
     }
   };
 
