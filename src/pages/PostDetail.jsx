@@ -6,14 +6,14 @@ import { ArrowLeft, Heart, ChatCircle, ShareNetwork, WhatsappLogo, TwitterLogo, 
 import { useAuth } from "../contexts/AuthContext";
 import API from "../lib/api";
 import SEO, { ArticleSchema } from "../components/SEO";
- 
+
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
- 
+
 export default function PostDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
- 
+
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState("");
@@ -23,18 +23,18 @@ export default function PostDetail() {
   const [showShare, setShowShare] = useState(false);
   const [related, setRelated] = useState([]);
   const [copied, setCopied] = useState(false);
- 
+
   useEffect(() => {
     fetchPost();
   }, [id]);
- 
+
   const fetchRelated = async (category) => {
     try {
       const res = await axios.get(`${API}/posts?category=${category}&limit=3`);
       setRelated((Array.isArray(res.data) ? res.data : []).filter(p => p._id !== id).slice(0, 3));
     } catch {}
   };
- 
+
   const fetchPost = async () => {
     try {
       const res = await axios.get(`${API}/posts/${id}`);
@@ -47,14 +47,14 @@ export default function PostDetail() {
       setLoading(false);
     }
   };
- 
+
   const handleLike = async () => {
     try {
       await axios.post(`${API}/posts/like/${id}`);
       fetchPost();
     } catch (err) { console.error(err); }
   };
- 
+
   const handleComment = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
@@ -67,7 +67,7 @@ export default function PostDetail() {
       fetchPost();
     } catch (err) { console.error(err); }
   };
- 
+
   const handleReply = async (commentId) => {
     if (!replyText[commentId]?.trim()) return;
     try {
@@ -80,14 +80,14 @@ export default function PostDetail() {
       fetchPost();
     } catch (err) { console.error(err); }
   };
- 
+
   const handleVote = async (optionIndex) => {
     try {
       await axios.post(`${API}/posts/vote/${id}/${optionIndex}`);
       fetchPost();
     } catch (err) { console.error(err); }
   };
- 
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F4F0E6] flex items-center justify-center">
@@ -95,7 +95,7 @@ export default function PostDetail() {
       </div>
     );
   }
- 
+
   if (!post) {
     return (
       <div className="min-h-screen bg-[#F4F0E6] flex flex-col items-center justify-center gap-4">
@@ -106,11 +106,11 @@ export default function PostDetail() {
       </div>
     );
   }
- 
+
   const postUrl = typeof window !== "undefined" ? window.location.href : "";
- 
+
   const canNativeShare = typeof navigator !== "undefined" && !!navigator.share;
- 
+
   const nativeShare = async () => {
     try {
       await navigator.share({
@@ -120,21 +120,21 @@ export default function PostDetail() {
       });
     } catch {}
   };
- 
+
   const copyLink = () => {
     navigator.clipboard.writeText(postUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   };
- 
+
   const readTime = post.content
     ? Math.max(1, Math.ceil(post.content.split(/\s+/).length / 200))
     : 1;
- 
+
   const bgColor = post.category === "smme" ? "bg-[#0A0A0A] text-[#F4F0E6]" : "bg-[#F4F0E6] text-[#0A0A0A]";
   const seoImage = post.image || undefined;
- 
+
   return (
     <div className={`min-h-screen ${bgColor}`}>
       <SEO
@@ -145,7 +145,7 @@ export default function PostDetail() {
       />
       <ArticleSchema post={post} url={`/post/${post._id}`} />
       <div className="max-w-3xl mx-auto px-6 py-16">
- 
+
         {/* BACK */}
         <button
           onClick={() => navigate(-1)}
@@ -153,13 +153,13 @@ export default function PostDetail() {
         >
           <ArrowLeft size={16} /> Back
         </button>
- 
+
         {/* CATEGORY + TOPIC */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <span className="text-xs uppercase tracking-[0.2em] text-[#C5A059]">
             {post.category} {post.topic ? `· ${post.topic}` : ""}
           </span>
- 
+
           {/* TITLE */}
           <h1
             className="text-4xl sm:text-5xl font-light mt-3 mb-6 leading-tight"
@@ -167,7 +167,7 @@ export default function PostDetail() {
           >
             {post.title || "(Untitled)"}
           </h1>
- 
+
           {/* META */}
           <div className="flex items-center gap-4 text-xs text-[#4A4A4A] mb-8 pb-6 border-b border-[#0A0A0A]/10">
             <span>{post.is_anonymous ? "Anonymous" : (post.author_name || post.author || "Admin")}</span>
@@ -176,7 +176,7 @@ export default function PostDetail() {
             <span className="text-[#0A0A0A]/30">·</span>
             <span>{readTime} min read</span>
           </div>
- 
+
           {/* HERO IMAGE */}
           {post.image && (
             <div className="mb-8 overflow-hidden">
@@ -187,7 +187,7 @@ export default function PostDetail() {
               />
             </div>
           )}
- 
+
           {/* VIDEO */}
           {post.video && (
             <div className="mb-8">
@@ -196,12 +196,12 @@ export default function PostDetail() {
               </video>
             </div>
           )}
- 
+
           {/* CONTENT */}
           <div className="prose max-w-none">
             <p className="text-[17px] leading-[2] whitespace-pre-wrap">{post.content}</p>
           </div>
- 
+
           {/* POLL */}
           {post.poll?.question && (
             <div className="mt-10 bg-[#EAE5D9] p-6">
@@ -231,18 +231,21 @@ export default function PostDetail() {
               </p>
             </div>
           )}
- 
+
           {/* LIKE + COMMENT COUNT */}
           <div className="flex items-center gap-8 mt-10 pt-8 border-t border-[#0A0A0A]/10">
             <button
-              onClick={handleLike}
+              onClick={user ? handleLike : () => navigate("/login")}
               className={`flex items-center gap-2 transition group ${
                 userLiked ? "text-red-500" : "text-[#4A4A4A] hover:text-red-500"
               }`}
-              title={userLiked ? "Unlike" : "Like"}
+              title={!user ? "Login to like" : userLiked ? "Unlike" : "Like"}
             >
               <Heart size={22} weight={userLiked ? "fill" : "regular"} className="group-hover:scale-110 transition" />
-              <span className="text-sm">{post.likes || 0} {post.likes === 1 ? "like" : "likes"}</span>
+              <span className="text-sm">
+                {post.likes || 0} {post.likes === 1 ? "like" : "likes"}
+                {!user && <span className="ml-1 text-xs text-[#C5A059]">(login to like)</span>}
+              </span>
             </button>
             <span className="flex items-center gap-2 text-[#4A4A4A] text-sm">
               <ChatCircle size={22} />
@@ -258,7 +261,7 @@ export default function PostDetail() {
                   onClick={() => setShowShare(false)}>
                   <div className="bg-white w-full max-w-sm shadow-2xl"
                     onClick={e => e.stopPropagation()}>
- 
+
                     {/* Header */}
                     <div className="flex items-center justify-between px-5 py-4 border-b border-[#0A0A0A]/10">
                       <span className="text-sm font-medium uppercase tracking-widest">Share this post</span>
@@ -266,12 +269,12 @@ export default function PostDetail() {
                         <XIcon size={18} />
                       </button>
                     </div>
- 
+
                     {/* Post title preview */}
                     <div className="px-5 py-3 bg-[#F4F0E6] border-b border-[#0A0A0A]/10">
                       <p className="text-xs text-[#4A4A4A] line-clamp-2 italic">"{post.title}"</p>
                     </div>
- 
+
                     {/* Share options */}
                     <div className="grid grid-cols-4 gap-1 p-4">
                       {[
@@ -347,7 +350,7 @@ export default function PostDetail() {
                         )
                       ))}
                     </div>
- 
+
                     {/* Copy link */}
                     <div className="px-4 pb-4">
                       <div className="flex items-center gap-2 bg-[#F4F0E6] border border-[#0A0A0A]/10 px-3 py-2">
@@ -358,13 +361,13 @@ export default function PostDetail() {
                         </button>
                       </div>
                     </div>
- 
+
                   </div>
                 </div>
               )}
             </div>
           </div>
- 
+
           {/* COMMENT INPUT */}
           <div className="mt-8">
             <h3 className="text-sm uppercase tracking-[0.2em] text-[#C5A059] mb-4">
@@ -395,7 +398,7 @@ export default function PostDetail() {
               </button>
             </form>
           </div>
- 
+
           {/* COMMENTS LIST */}
           {post.comments?.length > 0 && (
             <div className="mt-8 space-y-6">
@@ -408,7 +411,7 @@ export default function PostDetail() {
                     </span>
                   </div>
                   <p className="text-sm leading-relaxed">{c.text}</p>
- 
+
                   {/* REPLIES */}
                   {c.replies?.length > 0 && (
                     <div className="mt-3 pl-4 border-l-2 border-[#C5A059]/30 space-y-2">
@@ -420,7 +423,7 @@ export default function PostDetail() {
                       ))}
                     </div>
                   )}
- 
+
                   {/* REPLY BUTTON */}
                   {user && (
                     <div className="mt-2">
@@ -459,7 +462,7 @@ export default function PostDetail() {
               ))}
             </div>
           )}
- 
+
         {/* RELATED POSTS */}
         {related.length > 0 && (
           <div className="mt-16 pt-10 border-t border-[#0A0A0A]/10">
@@ -481,7 +484,7 @@ export default function PostDetail() {
             </div>
           </div>
         )}
- 
+
         </motion.div>
       </div>
     </div>

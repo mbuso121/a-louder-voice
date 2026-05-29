@@ -1,433 +1,294 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ChatCircle, ArrowRight, X } from "@phosphor-icons/react";
+import { Heart, ChatCircle, X, ArrowRight, ShareNetwork } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
 import API from "../lib/api";
 import SEO from "../components/SEO";
 import SkeletonCard from "../components/SkeletonCard";
 
-
-// ─── MODAL (full Instagram-style post view) ───────────────────────────────────
-function PostModal({ post, onClose, onLike, onComment, onReply, user }) {
-  const [commentText, setCommentText] = useState("");
-  const [replyText, setReplyText] = useState({});
-  const [openReply, setOpenReply] = useState(null);
-  const commentsRef = useRef(null);
-
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  const submitComment = (e) => {
-    e.preventDefault();
-    if (!commentText.trim()) return;
-    onComment(post._id, commentText);
-    setCommentText("");
-  };
-
-  const total = post.poll?.options?.reduce((s, o) => s + o.votes, 0) || 0;
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      >
-        <motion.div
-          className="bg-white w-full max-w-5xl max-h-[90vh] flex overflow-hidden rounded-sm shadow-2xl"
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* LEFT — media/content */}
-          <div className="flex-1 bg-[#0A0A0A] flex items-center justify-center min-h-[400px] overflow-hidden">
-            {post.image ? (
-              <img src={post.image} alt={post.title} className="w-full h-full object-contain max-h-[90vh]" />
-            ) : post.video ? (
-              <video controls autoPlay className="w-full max-h-[90vh]">
-                <source src={post.video} />
-              </video>
-            ) : (
-              <div className="p-10 text-[#F4F0E6] max-w-lg">
-                {post.title && (
-                  <h2 className="text-3xl font-light mb-4 italic" style={{ fontFamily: "Cormorant Garamond, serif" }}>
-                    {post.title}
-                  </h2>
-                )}
-                <p className="text-[#F4F0E6]/80 text-sm leading-relaxed">{post.content}</p>
-
-                {/* Poll in modal */}
-                {post.poll?.question && (
-                  <div className="mt-6">
-                    <p className="font-medium mb-3 text-[#C5A059]">{post.poll.question}</p>
-                    <div className="space-y-3">
-                      {post.poll.options.map((opt, i) => {
-                        const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
-                        return (
-                          <div key={i} className="w-full">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>{opt.text}</span>
-                              <span className="text-[#C5A059]">{pct}%</span>
-                            </div>
-                            <div className="h-1.5 bg-[#333] rounded-full overflow-hidden">
-                              <div className="h-full bg-[#C5A059]" style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <p className="text-xs text-[#F4F0E6]/30 mt-2">{total} votes</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT — comments panel */}
-          <div className="w-[360px] flex flex-col border-l border-gray-200 shrink-0">
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b">
-              <div>
-                <span className="text-xs uppercase tracking-widest text-[#C5A059]">{post.topic}</span>
-                {post.title && <p className="text-sm font-medium line-clamp-1">{post.title}</p>}
-              </div>
-              <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* If there's text content + media, show the text here */}
-            {(post.image || post.video) && post.content && (
-              <div className="px-4 py-3 border-b text-sm text-gray-700 leading-relaxed max-h-32 overflow-y-auto">
-                {post.content}
-              </div>
-            )}
-
-            {/* COMMENTS scroll area */}
-            <div ref={commentsRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-              {post.comments?.length === 0 && (
-                <p className="text-xs text-gray-400 text-center mt-6">No comments yet. Be first!</p>
-              )}
-              {post.comments?.map((c) => (
-                <div key={c._id} className="text-sm">
-                  <div className="flex gap-2 items-start">
-                    <div className="w-7 h-7 rounded-full bg-[#C5A059] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                      {(c.user || "U")[0].toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <span className="font-semibold text-[#0A0A0A] mr-2">{c.user}</span>
-                      <span className="text-gray-700">{c.text}</span>
-
-                      {/* Replies */}
-                      {c.replies?.map((r, i) => (
-                        <div key={i} className="mt-2 flex gap-2 items-start pl-2 border-l-2 border-[#C5A059]/20">
-                          <div className="w-5 h-5 rounded-full bg-[#EAE5D9] flex items-center justify-center text-[#4A4A4A] text-xs font-bold shrink-0">
-                            {(r.user || "U")[0].toUpperCase()}
-                          </div>
-                          <div>
-                            <span className="font-semibold text-xs text-[#0A0A0A] mr-1">{r.user}</span>
-                            <span className="text-xs text-gray-600">{r.text}</span>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Reply toggle */}
-                      {user && (
-                        <div className="mt-1">
-                          {openReply === c._id ? (
-                            <div className="flex gap-2 mt-1">
-                              <input
-                                value={replyText[c._id] || ""}
-                                onChange={(e) => setReplyText({ ...replyText, [c._id]: e.target.value })}
-                                placeholder="Reply..."
-                                className="flex-1 text-xs border-b border-gray-200 focus:outline-none py-1"
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    onReply(post._id, c._id, replyText[c._id] || "");
-                                    setReplyText({ ...replyText, [c._id]: "" });
-                                    setOpenReply(null);
-                                  }
-                                }}
-                              />
-                              <button onClick={() => setOpenReply(null)} className="text-xs text-gray-400">✕</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => setOpenReply(c._id)} className="text-xs text-gray-400 hover:text-[#C5A059] mt-0.5">Reply</button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* ACTIONS */}
-            <div className="border-t px-4 py-3">
-              <div className="flex items-center gap-4 mb-3">
-                <button onClick={() => onLike(post._id)} className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 transition">
-                  <Heart size={22} />
-                  <span className="text-sm font-medium">{post.likes || 0}</span>
-                </button>
-                <span className="flex items-center gap-1.5 text-gray-400 text-sm">
-                  <ChatCircle size={20} />
-                  {post.comments?.length || 0}
-                </span>
-              </div>
-
-              {/* COMMENT INPUT */}
-              {user ? (
-                <form onSubmit={submitComment} className="flex gap-2 items-center">
-                  <input
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Add a comment..."
-                    className="flex-1 text-sm border-b border-gray-200 focus:outline-none py-1"
-                  />
-                  <button type="submit" disabled={!commentText.trim()} className="text-sm text-[#C5A059] font-semibold disabled:opacity-40">
-                    Post
-                  </button>
-                </form>
-              ) : (
-                <p className="text-xs text-gray-400">Log in to comment</p>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
-
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function Engagement() {
-  const { user } = useAuth();
+  const [posts,      setPosts]      = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [topic,      setTopic]      = useState("all");
+  const [selected,   setSelected]   = useState(null);
   const [likedPosts, setLikedPosts] = useState(new Set());
-  const navigate = useNavigate();
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedPost, setSelectedPost] = useState(null);
+  const [voteMap,    setVoteMap]    = useState({});
+  const { user } = useAuth();
+  const navigate  = useNavigate();
 
-  useEffect(() => { fetchPosts(); }, []);
+  const topics = ["all", "discussion", "poll"];
+
+  useEffect(() => { fetchPosts(); }, [topic]);
 
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/posts?category=engagement`);
+      const url = topic === "all"
+        ? `${API}/posts?category=engagement`
+        : `${API}/posts?category=engagement&topic=${topic}`;
+      const res = await axios.get(url);
       setPosts(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error(err);
-      setPosts([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setPosts([]); }
+    finally { setLoading(false); }
   };
 
   const handleLike = async (postId) => {
+    if (!user) { navigate("/login"); return; }
+    const token = localStorage.getItem("token");
     try {
-      await axios.post(`${API}/posts/like/${postId}`);
-      fetchPosts();
-      if (selectedPost?._id === postId) {
-        const res = await axios.get(`${API}/posts/${postId}`);
-        setSelectedPost(res.data);
-      }
-    } catch (err) { console.error(err); }
+      const res = await axios.post(
+        `${API}/posts/like/${postId}`, {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setLikedPosts(prev => {
+        const next = new Set(prev);
+        res.data.userLiked ? next.add(postId) : next.delete(postId);
+        return next;
+      });
+      setPosts(prev => prev.map(p => p._id === postId ? { ...p, likes: res.data.likes } : p));
+      if (selected?._id === postId) setSelected(s => ({ ...s, likes: res.data.likes, userLiked: res.data.userLiked }));
+    } catch {}
   };
 
-  const handleComment = async (postId, text) => {
+  const handleVote = async (postId, optionIndex) => {
+    if (!user) { navigate("/login"); return; }
+    if (voteMap[postId] !== undefined) return;
+    const token = localStorage.getItem("token");
     try {
-      await axios.post(`${API}/posts/comment/${postId}`, { text, user: user?.name || "Anonymous" });
-      fetchPosts();
-      const res = await axios.get(`${API}/posts/${postId}`);
-      setSelectedPost(res.data);
-    } catch (err) { console.error(err); }
+      const res = await axios.post(
+        `${API}/posts/vote/${postId}/${optionIndex}`, {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setVoteMap(prev => ({ ...prev, [postId]: optionIndex }));
+      setPosts(prev => prev.map(p => p._id === postId ? res.data : p));
+      if (selected?._id === postId) setSelected(res.data);
+    } catch {}
   };
 
-  const handleReply = async (postId, commentId, text) => {
-    if (!text.trim()) return;
-    try {
-      await axios.post(`${API}/posts/reply/${postId}/${commentId}`, { text, user: user?.name || "Anonymous" });
-      fetchPosts();
-      const res = await axios.get(`${API}/posts/${postId}`);
-      setSelectedPost(res.data);
-    } catch (err) { console.error(err); }
+  const openPost = (post) => {
+    setSelected(post);
+    document.body.style.overflow = "hidden";
   };
 
-  const openPost = (post) => { setSelectedPost(post); document.body.style.overflow = "hidden"; };
-  const closePost = () => { setSelectedPost(null); document.body.style.overflow = ""; };
+  const closePost = () => {
+    setSelected(null);
+    document.body.style.overflow = "";
+  };
+
+  const totalVotes = (poll) => poll?.options?.reduce((s, o) => s + (o.votes || 0), 0) || 0;
 
   return (
     <div className="min-h-screen bg-[#F4F0E6] py-16 px-6">
-      <SEO title="Engagement" description="Join discussions, vote on polls, like and comment. Community engagement on A Louder Voice South Africa." path="/engagement" />
+      <SEO title="Engagement" description="Join polls, discussions and conversations on A Louder Voice." path="/engagement" />
+
       <div className="max-w-5xl mx-auto">
 
         {/* HEADER */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-          <h1 className="text-5xl sm:text-6xl italic" style={{ fontFamily: "Cormorant Garamond, serif" }}>Engagement</h1>
-          <div className="w-16 h-[1px] bg-[#C5A059] mx-auto my-6" />
-          <p className="text-lg text-[#4A4A4A]">Connect, discuss, and be heard.</p>
-        </motion.div>
+        <div className="text-center mb-12">
+          <p className="text-xs uppercase tracking-[0.3em] text-[#C5A059] mb-3">Community</p>
+          <h1 className="text-5xl sm:text-6xl font-light" style={{ fontFamily: "Cormorant Garamond, serif" }}>
+            Engagement
+          </h1>
+          <div className="w-16 h-[1px] bg-[#C5A059] mx-auto mt-6" />
+        </div>
 
+        {/* TOPIC FILTER */}
+        <div className="flex justify-center gap-3 mb-10 flex-wrap">
+          {topics.map(t => (
+            <button key={t} onClick={() => setTopic(t)}
+              className={`px-5 py-2 text-xs uppercase tracking-widest border transition ${
+                topic === t
+                  ? "bg-[#0A0A0A] text-[#F4F0E6] border-[#0A0A0A]"
+                  : "border-[#0A0A0A]/20 hover:border-[#C5A059] hover:text-[#C5A059]"
+              }`}>
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {/* POSTS GRID */}
         {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : posts.length === 0 ? (
-          <p className="text-center text-[#4A4A4A]">No posts yet.</p>
+          <p className="text-center text-[#4A4A4A] py-16">No posts yet.</p>
         ) : (
-          <div className="space-y-6">
-            {posts.map((post, idx) => {
-              const total = post.poll?.options?.reduce((s, o) => s + o.votes, 0) || 0;
-              return (
-                <motion.div
-                  key={post._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.06 }}
-                  className="bg-white border border-[#E0DBD1] shadow-sm overflow-hidden"
-                >
-                  {/* POST HEADER */}
-                  <div className="px-5 py-3 border-b border-[#E0DBD1] flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#C5A059] flex items-center justify-center text-white text-xs font-bold">
-                        A
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold">A Louder Voice</p>
-                        <p className="text-xs text-[#C5A059] uppercase tracking-widest">{post.topic}</p>
-                      </div>
-                    </div>
-                  </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {posts.map(post => (
+              <motion.div key={post._id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white border hover:border-[#C5A059] transition cursor-pointer group flex flex-col"
+                onClick={() => openPost(post)}>
 
-                  {/* IMAGE / VIDEO — clickable to open modal */}
-                  {post.image && (
-                    <div className="cursor-pointer" onClick={() => openPost(post)}>
-                      <img src={post.image} alt={post.title}
-                        className="w-full max-h-[500px] object-cover hover:opacity-95 transition" />
-                    </div>
-                  )}
-                  {post.video && (
-                    <video controls className="w-full max-h-[500px]">
-                      <source src={post.video} />
-                    </video>
-                  )}
+                {post.image && (
+                  <img src={post.image} alt={post.title}
+                    className="w-full h-44 object-cover group-hover:opacity-90 transition" />
+                )}
 
-                  {/* CONTENT */}
-                  <div className="px-5 py-4">
-                    {post.title && <h3 className="font-semibold text-lg mb-1">{post.title}</h3>}
-                    <p className="text-sm text-[#4A4A4A] leading-relaxed line-clamp-3">{post.content}</p>
+                <div className="p-5 flex-1 flex flex-col">
+                  <p className="text-xs uppercase tracking-widest text-[#C5A059] mb-2">{post.topic}</p>
+                  <h3 className="text-lg font-light mb-3 group-hover:text-[#C5A059] transition line-clamp-2"
+                    style={{ fontFamily: "Cormorant Garamond, serif" }}>
+                    {post.title}
+                  </h3>
+                  <p className="text-sm text-[#4A4A4A] line-clamp-3 leading-relaxed flex-1">{post.content}</p>
 
-                    {/* POLL */}
-                    {post.poll?.question && (
-                      <div className="mt-4 bg-[#F4F0E6] p-4">
-                        <p className="font-medium text-sm mb-3">{post.poll.question}</p>
-                        <div className="space-y-2">
-                          {post.poll.options.map((opt, i) => {
-                            const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
-                            return (
-                              <button key={i} onClick={() => { axios.post(`${API}/posts/vote/${post._id}/${i}`).then(fetchPosts); }}
-                                className="w-full text-left group">
-                                <div className="flex justify-between text-xs mb-1">
-                                  <span className="group-hover:text-[#C5A059] transition">{opt.text}</span>
-                                  <span className="text-[#C5A059] font-medium">{pct}%</span>
-                                </div>
-                                <div className="h-2 bg-[#EAE5D9] rounded-full overflow-hidden">
-                                  <div className="h-full bg-[#C5A059] transition-all duration-500" style={{ width: `${pct}%` }} />
-                                </div>
-                              </button>
-                            );
-                          })}
+                  {/* POLL PREVIEW */}
+                  {post.poll && (
+                    <div className="mt-3 space-y-1">
+                      {post.poll.options?.slice(0, 2).map((opt, i) => (
+                        <div key={i} className="text-xs bg-[#F4F0E6] px-3 py-1.5 truncate">
+                          {opt.text}
                         </div>
-                        <p className="text-xs text-gray-400 mt-2">{total} votes</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ACTIONS BAR */}
-                  <div className="px-5 pb-3 flex items-center gap-5 border-t border-[#E0DBD1] pt-3">
-                    <button onClick={() => handleLike(post._id)} className="flex items-center gap-1.5 text-[#4A4A4A] hover:text-red-500 transition">
-                      <Heart size={20} />
-                      <span className="text-sm">{post.likes || 0}</span>
-                    </button>
-                    <button onClick={() => openPost(post)} className="flex items-center gap-1.5 text-[#4A4A4A] hover:text-[#C5A059] transition">
-                      <ChatCircle size={20} />
-                      <span className="text-sm">{post.comments?.length || 0} comments</span>
-                    </button>
-                    <button onClick={() => openPost(post)} className="ml-auto flex items-center gap-1 text-xs text-[#C5A059] uppercase tracking-widest hover:translate-x-1 transition">
-                      View all <ArrowRight size={13} />
-                    </button>
-                  </div>
-
-                  {/* PREVIEW — latest comment */}
-                  {post.comments?.length > 0 && (
-                    <div className="px-5 pb-4 text-sm">
-                      <span className="font-semibold text-[#0A0A0A] mr-2">{post.comments.at(-1).user}</span>
-                      <span className="text-[#4A4A4A]">{post.comments.at(-1).text}</span>
-                      {post.comments.length > 1 && (
-                        <button onClick={() => openPost(post)} className="block text-xs text-gray-400 mt-1 hover:text-[#C5A059] transition">
-                          View all {post.comments.length} comments
-                        </button>
+                      ))}
+                      {post.poll.options?.length > 2 && (
+                        <p className="text-xs text-[#4A4A4A]">+{post.poll.options.length - 2} more options</p>
                       )}
                     </div>
                   )}
 
-                  {/* QUICK COMMENT INPUT */}
-                  {user && (
-                    <div className="px-5 pb-4 border-t border-[#E0DBD1] pt-3">
-                      <QuickComment postId={post._id} userName={user.name} onDone={fetchPosts} />
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#F4F0E6]">
+                    <div className="flex items-center gap-3">
+                      <button onClick={e => { e.stopPropagation(); handleLike(post._id); }}
+                        className={`flex items-center gap-1 text-xs transition ${
+                          likedPosts.has(post._id) ? "text-red-500" : "text-[#4A4A4A] hover:text-red-500"
+                        }`}>
+                        <Heart size={14} weight={likedPosts.has(post._id) ? "fill" : "regular"} />
+                        {post.likes || 0}
+                      </button>
+                      <span className="flex items-center gap-1 text-xs text-[#4A4A4A]">
+                        <ChatCircle size={14} /> {post.comments?.length || 0}
+                      </span>
                     </div>
-                  )}
-                </motion.div>
-              );
-            })}
+                    <span className="flex items-center text-[#C5A059] text-xs uppercase tracking-widest">
+                      Open <ArrowRight size={12} className="ml-1" />
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* MODAL */}
-      {selectedPost && (
-        <PostModal
-          post={selectedPost}
-          onClose={closePost}
-          onLike={handleLike}
-          onComment={handleComment}
-          onReply={handleReply}
-          user={user}
-        />
-      )}
-    </div>
-  );
-}
+      {/* ── FULL POST MODAL ── */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+            onClick={closePost}>
 
-function QuickComment({ postId, userName, onDone }) {
-  const [text, setText] = useState("");
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!text.trim()) return;
-    await axios.post(`${API}/posts/comment/${postId}`, { text, user: userName || "Anonymous" });
-    setText("");
-    onDone();
-  };
-  return (
-    <form onSubmit={submit} className="flex gap-2 items-center">
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Add a comment..."
-        className="flex-1 text-sm border-b border-[#E0DBD1] bg-transparent py-1 focus:outline-none"
-      />
-      <button type="submit" disabled={!text.trim()} className="text-sm text-[#C5A059] font-semibold disabled:opacity-40">
-        Post
-      </button>
-    </form>
+            <motion.div
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="bg-[#F4F0E6] w-full sm:max-w-2xl sm:rounded-lg overflow-hidden flex flex-col"
+              style={{ maxHeight: "92vh" }}
+              onClick={e => e.stopPropagation()}>
+
+              {/* MODAL HEADER */}
+              <div className="flex items-start justify-between px-5 py-4 border-b border-[#0A0A0A]/10 flex-shrink-0">
+                <div className="flex-1 min-w-0 pr-3">
+                  <p className="text-xs uppercase tracking-widest text-[#C5A059] mb-1">{selected.topic}</p>
+                  <h2 className="text-xl font-light leading-snug" style={{ fontFamily: "Cormorant Garamond, serif" }}>
+                    {selected.title}
+                  </h2>
+                </div>
+                <button onClick={closePost} className="text-[#4A4A4A] hover:text-black transition flex-shrink-0 mt-1">
+                  <X size={22} />
+                </button>
+              </div>
+
+              {/* MODAL BODY — scrollable */}
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+
+                {selected.image && (
+                  <img src={selected.image} alt={selected.title}
+                    className="w-full max-h-56 object-cover mb-4" />
+                )}
+
+                <p className="text-sm text-[#0A0A0A]/80 leading-relaxed whitespace-pre-line mb-4">
+                  {selected.content}
+                </p>
+
+                {/* POLL */}
+                {selected.poll && (
+                  <div className="bg-white border p-4 mb-4">
+                    <p className="font-medium text-sm mb-3">{selected.poll.question}</p>
+                    <div className="space-y-2">
+                      {selected.poll.options?.map((opt, i) => {
+                        const total   = totalVotes(selected.poll);
+                        const pct     = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
+                        const voted   = voteMap[selected._id] !== undefined;
+                        const isVoted = voteMap[selected._id] === i;
+                        return (
+                          <button key={i} disabled={voted}
+                            onClick={() => handleVote(selected._id, i)}
+                            className={`w-full text-left transition ${voted ? "cursor-default" : "hover:opacity-80"}`}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className={isVoted ? "text-[#C5A059] font-medium" : ""}>{opt.text}</span>
+                              {voted && <span className="text-xs text-[#4A4A4A]">{pct}%</span>}
+                            </div>
+                            <div className="h-2 bg-[#F4F0E6] rounded-full overflow-hidden">
+                              <div className={`h-full transition-all duration-500 ${isVoted ? "bg-[#C5A059]" : "bg-[#0A0A0A]/20"}`}
+                                style={{ width: voted ? `${pct}%` : "0%" }} />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-[#4A4A4A] mt-3">{totalVotes(selected.poll)} vote{totalVotes(selected.poll) !== 1 ? "s" : ""}</p>
+                    {!user && <p className="text-xs text-[#C5A059] mt-1">Log in to vote</p>}
+                  </div>
+                )}
+
+                {/* READ FULL */}
+                <button onClick={() => { closePost(); navigate(`/post/${selected._id}`); }}
+                  className="text-xs uppercase tracking-widest text-[#C5A059] hover:underline flex items-center gap-1 mb-4">
+                  Read full post <ArrowRight size={12} />
+                </button>
+              </div>
+
+              {/* MODAL FOOTER — fixed */}
+              <div className="flex items-center justify-between px-5 py-3 border-t border-[#0A0A0A]/10 bg-[#F4F0E6] flex-shrink-0">
+                <div className="flex items-center gap-4">
+                  <button onClick={() => handleLike(selected._id)}
+                    className={`flex items-center gap-1.5 text-sm transition ${
+                      likedPosts.has(selected._id) ? "text-red-500" : "text-[#4A4A4A] hover:text-red-500"
+                    }`}>
+                    <Heart size={18} weight={likedPosts.has(selected._id) ? "fill" : "regular"} />
+                    {selected.likes || 0} {selected.likes === 1 ? "like" : "likes"}
+                  </button>
+                  <span className="flex items-center gap-1.5 text-sm text-[#4A4A4A]">
+                    <ChatCircle size={18} /> {selected.comments?.length || 0}
+                  </span>
+                </div>
+                {!user && (
+                  <button onClick={() => { closePost(); navigate("/login"); }}
+                    className="text-xs uppercase tracking-widest text-[#C5A059] hover:underline">
+                    Login to like & vote
+                  </button>
+                )}
+                <a href={`https://wa.me/?text=${encodeURIComponent(selected.title + " " + window.location.origin + "/post/" + selected._id)}`}
+                  target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                  className="flex items-center gap-1 text-xs text-[#4A4A4A] hover:text-[#25D366] transition">
+                  <ShareNetwork size={16} /> Share
+                </a>
+              </div>
+
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+    </div>
   );
 }

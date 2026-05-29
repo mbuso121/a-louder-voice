@@ -2,19 +2,52 @@ import express from "express";
 import Post from "../models/Post.js";
 import { uploadMedia } from "../config/cloudinary.js";
 import { protect } from "../middleware/authMiddleware.js";
-import { submitLimiter } from "../middleware/rateLimiter.js";
 import { adminOnly } from "../middleware/adminMiddleware.js";
+import { submitLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
-// ============================
-// CREATE POST (Admin only)
-// ============================
+// Simple text sanitizer
+const sanitizeText = (str) => str ? String(str).replace(/<[^>]*>/g, "").trim() : "";
+
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+router.get("/search", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) return res.json([]);
+    let posts = [];
+    try {
+      posts = await Post.find(
+        { status: "approved", $text: { $search: q.trim() } },
+        { score: { $meta: "textScore" } }
+      ).sort({ score: { $meta: "textScore" } }).limit(20);
+    } catch {
+      const regex = new RegExp(q.trim(), "i");
+      posts = await Post.find({
+        status: "approved",
+        $or: [{ title: regex }, { content: regex }]
+      }).sort({ createdAt: -1 }).limit(20);
+    }
+    res.json(posts);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── MY SUBMISSIONS ────────────────────────────────────────────────────────────
+router.get("/my-submissions", protect, async (req, res) => {
+  try {
+    const posts = await Post.find({ submittedBy: req.user.id }).sort({ createdAt: -1 });
+    res.json(posts);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── CREATE POST (Admin only) ──────────────────────────────────────────────────
 router.post("/create", protect, adminOnly, uploadMedia, async (req, res) => {
   try {
     const { category, topic, title, content, pollQuestion, pollOptions } = req.body;
-
-    // Cloudinary returns the secure_url in file.path
     const image = req.files?.image ? req.files.image[0].path : null;
     const video = req.files?.video ? req.files.video[0].path : null;
 
@@ -38,9 +71,7 @@ router.post("/create", protect, adminOnly, uploadMedia, async (req, res) => {
   }
 });
 
-// ============================
-// SUBMIT (User — pending)
-// ============================
+// ── SUBMIT (User — pending approval) ─────────────────────────────────────────
 router.post("/submit", protect, submitLimiter, async (req, res) => {
   try {
     const { content, category, topic, title, is_anonymous, author_name } = req.body;
@@ -60,59 +91,16 @@ router.post("/submit", protect, submitLimiter, async (req, res) => {
   }
 });
 
-
-// ============================
-// SEARCH
-// ============================
-router.get("/search", async (req, res) => {
-  try {
-    const { q } = req.query;
-    if (!q || q.trim().length < 2) return res.json([]);
-    // Try $text search first (uses MongoDB text index — fast)
-    // Fall back to regex if text index not ready
-    let posts = [];
-    try {
-      posts = await Post.find(
-        { status: "approved", $text: { $search: q.trim() } },
-        { score: { $meta: "textScore" } }
-      ).sort({ score: { $meta: "textScore" } }).limit(20);
-    } catch {
-      const regex = new RegExp(q.trim(), "i");
-      posts = await Post.find({
-        status: "approved",
-        $or: [{ title: regex }, { content: regex }]
-      }).sort({ createdAt: -1 }).limit(20);
-    }
-    res.json(posts);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ============================
-// MY SUBMISSIONS
-// ============================
-router.get("/my-submissions", protect, async (req, res) => {
-  try {
-    const posts = await Post.find({ submittedBy: req.user.id }).sort({ createdAt: -1 });
-    res.json(posts);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ============================
-// GET ALL POSTS
-// ============================
+// ── GET ALL POSTS ─────────────────────────────────────────────────────────────
 router.get("/", async (req, res) => {
   try {
     const { category, topic } = req.query;
-    let filter = { status: "approved" };
-    if (category) filter.category = category;
-    if (topic && topic !== "all") filter.topic = topic;
     const page  = parseInt(req.query.page)  || 1;
     const limit = parseInt(req.query.limit) || 50;
     const skip  = (page - 1) * limit;
+    let filter = { status: "approved" };
+    if (category) filter.category = category;
+    if (topic && topic !== "all") filter.topic = topic;
     const posts = await Post.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit);
     res.json(posts);
   } catch (err) {
@@ -120,59 +108,40 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ============================
-// GET SINGLE POST
-// ============================
+// ── GET SINGLE POST ───────────────────────────────────────────────────────────
 router.get("/:id", async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ error: "Post not found" });
 
-    // Determine if current user liked this post
+    // Check if current user liked this post
     const token = req.headers.authorization?.split(" ")[1];
-    let identifier = req.ip || "anon";
+    let userLiked = false;
     if (token) {
       try {
-        const jwt = (await import("jsonwebtoken")).default;
+        const jwt     = (await import("jsonwebtoken")).default;
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        identifier = `user_${decoded.id}`;
+        userLiked     = post.likedBy.includes(`user_${decoded.id}`);
       } catch {}
     }
-
-    const userLiked = post.likedBy.includes(identifier);
     res.json({ ...post.toObject(), userLiked });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ============================
-// LIKE (1 per user — toggle)
-// ============================
-router.post("/like/:id", async (req, res) => {
+// ── LIKE (registered users only — 1 per user, toggle) ────────────────────────
+router.post("/like/:id", protect, async (req, res) => {
   try {
-    // Identifier: user ID from token (if logged in) or IP fallback
-    const token = req.headers.authorization?.split(" ")[1];
-    let identifier = req.ip || "anon";
-    if (token) {
-      try {
-        const jwt = (await import("jsonwebtoken")).default;
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        identifier = `user_${decoded.id}`;
-      } catch {}
-    }
-
+    const identifier = `user_${req.user.id}`;
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ error: "Post not found" });
 
     const alreadyLiked = post.likedBy.includes(identifier);
-
     if (alreadyLiked) {
-      // Unlike
       post.likedBy = post.likedBy.filter(id => id !== identifier);
-      post.likes = Math.max(0, post.likes - 1);
+      post.likes   = Math.max(0, post.likes - 1);
     } else {
-      // Like
       post.likedBy.push(identifier);
       post.likes += 1;
     }
@@ -184,12 +153,13 @@ router.post("/like/:id", async (req, res) => {
   }
 });
 
-// ============================
-// COMMENT
-// ============================
-router.post("/comment/:id", async (req, res) => {
+// ── COMMENT ───────────────────────────────────────────────────────────────────
+router.post("/comment/:id", protect, async (req, res) => {
   try {
-    const { text, user } = req.body;
+    const text = sanitizeText(req.body.text);
+    const user = sanitizeText(req.body.user);
+    if (!text) return res.status(400).json({ error: "Comment cannot be empty" });
+    if (text.length > 1000) return res.status(400).json({ error: "Comment too long (max 1000 chars)" });
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ error: "Post not found" });
     post.comments.push({ text, user: user || "Anonymous", replies: [] });
@@ -200,12 +170,13 @@ router.post("/comment/:id", async (req, res) => {
   }
 });
 
-// ============================
-// REPLY
-// ============================
-router.post("/reply/:postId/:commentId", async (req, res) => {
+// ── REPLY ─────────────────────────────────────────────────────────────────────
+router.post("/reply/:postId/:commentId", protect, async (req, res) => {
   try {
-    const { text, user } = req.body;
+    const text = sanitizeText(req.body.text);
+    const user = sanitizeText(req.body.user);
+    if (!text) return res.status(400).json({ error: "Reply cannot be empty" });
+    if (text.length > 500) return res.status(400).json({ error: "Reply too long (max 500 chars)" });
     const post = await Post.findById(req.params.postId);
     if (!post) return res.status(404).json({ error: "Post not found" });
     const comment = post.comments.id(req.params.commentId);
@@ -218,10 +189,8 @@ router.post("/reply/:postId/:commentId", async (req, res) => {
   }
 });
 
-// ============================
-// VOTE ON POLL
-// ============================
-router.post("/vote/:postId/:optionIndex", async (req, res) => {
+// ── VOTE ON POLL ──────────────────────────────────────────────────────────────
+router.post("/vote/:postId/:optionIndex", protect, async (req, res) => {
   try {
     const post = await Post.findById(req.params.postId);
     if (!post || !post.poll) return res.status(404).json({ error: "Poll not found" });
