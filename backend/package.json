@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "main": "server.js",
-  "scripts": {
+ "scripts": {
+    "build": "echo 'No build needed'",
     "start": "node --no-deprecation server.js",
     "dev": "node --no-deprecation --watch server.js"
   },
