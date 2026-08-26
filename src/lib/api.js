@@ -1,5 +1,4 @@
-const API = import.meta.env.VITE_BACKEND_URL
-  ? `${import.meta.env.VITE_BACKEND_URL}/api`
-  : "https://api.aloudervoice.co.za";
+const API = "https://api.aloudervoice.co.za/api";
 
 export default API;
+
